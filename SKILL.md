@@ -15,6 +15,33 @@ description: >
 
 > AI-driven autonomous network traffic capture and deep analysis.
 
+## ⚠️ CRITICAL: Pre-flight Checklist
+
+**STOP. Before executing ANY capture command, AI MUST confirm these items:**
+
+| Required Info | How to Get It | Default If Missing |
+|---------------|---------------|-------------------|
+| **Target URL** | Ask user: "请提供要分析的目标 URL" | ❌ **MUST ASK** - never guess |
+| **Analysis Goal** | Ask: "分析目的是什么？(性能/安全/调试/API发现/通用)" | `general` |
+| **Scope Restriction** | Ask if URL looks like internal/enterprise site | Auto-generate from domain |
+| **Authorization** | User must confirm they have permission to capture | ❌ **MUST CONFIRM** |
+
+**If user says vague things like "帮我抓包" or "analyze traffic":**
+```
+AI MUST respond:
+"好的，我可以帮你进行网络流量抓包分析。请告诉我：
+1. 目标 URL 是什么？
+2. 分析目的是什么？（性能分析/安全检查/API发现/调试错误/通用分析）
+3. 你是否有权限对该网站进行流量捕获？"
+```
+
+**NEVER:**
+- Guess or assume a URL
+- Start capture without explicit URL from user
+- Proceed without authorization confirmation
+
+---
+
 ## Purpose
 
 This skill gives Claude Code the ability to **autonomously** capture and analyze
