@@ -9,6 +9,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CHECK_ONLY=false
+PYTHON_BIN="python3"
+PROJECT_VENV="$SCRIPT_DIR/.venv"
+PROJECT_VENV_PY="$PROJECT_VENV/bin/python3"
+PROJECT_VENV_PIP="$PROJECT_VENV/bin/pip"
+
+if [[ -x "$PROJECT_VENV_PY" ]]; then
+    PYTHON_BIN="$PROJECT_VENV_PY"
+fi
 
 for arg in "$@"; do
     case "$arg" in
@@ -74,10 +82,14 @@ else
 fi
 
 # mitmproxy Python module
-if python3 -c "from mitmproxy.io import FlowReader" 2>/dev/null; then
+if "$PYTHON_BIN" -c "from mitmproxy.io import FlowReader" 2>/dev/null; then
     ok "mitmproxy Python module: available"
 else
-    fail "mitmproxy Python module: not found (required for flow analysis)"
+    if [[ "$CHECK_ONLY" == "true" ]]; then
+        fail "mitmproxy Python module: not found (required for flow analysis)"
+    else
+        warn "mitmproxy Python module: not found yet (will install into .venv)"
+    fi
 fi
 
 # sha256sum
@@ -140,14 +152,33 @@ else
         ok "Script permissions already correct"
     fi
 
+    # Ensure project-local virtual environment
+    if [[ ! -x "$PROJECT_VENV_PY" ]]; then
+        echo "  Creating project virtualenv at $PROJECT_VENV..."
+        if python3 -m venv "$PROJECT_VENV" >/dev/null 2>&1; then
+            ok "Project virtualenv created"
+        else
+            fail "Failed to create virtualenv"
+            echo "  Try: sudo apt install python3-venv"
+        fi
+    else
+        ok "Project virtualenv already exists"
+    fi
+
     # Install Python dependencies
     if [[ -f "$SCRIPT_DIR/requirements.txt" ]]; then
         echo "  Installing Python dependencies..."
-        if pip3 install -r "$SCRIPT_DIR/requirements.txt" --quiet 2>&1; then
+        if [[ -x "$PROJECT_VENV_PIP" ]] && "$PROJECT_VENV_PIP" install -r "$SCRIPT_DIR/requirements.txt" --quiet 2>&1; then
             ok "Python dependencies installed"
         else
             fail "Failed to install Python dependencies"
-            echo "  Try: pip3 install -r requirements.txt"
+            echo "  Try: $PROJECT_VENV_PIP install -r requirements.txt"
+        fi
+
+        if [[ -x "$PROJECT_VENV_PY" ]] && "$PROJECT_VENV_PY" -c "from mitmproxy.io import FlowReader" 2>/dev/null; then
+            ok "mitmproxy Python module: available in .venv"
+        else
+            fail "mitmproxy Python module: still unavailable after install"
         fi
     fi
 

@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+
+      - name: Lint shell syntax
+        run: |
+          bash -n install.sh
+          for file in scripts/*.sh tests/*.sh; do
+            bash -n "$file"
+          done
+
+      - name: Lint python syntax
+        run: python -m compileall -q scripts tests
+
+      - name: Install check
+        run: ./install.sh --check
+
+      - name: Run Python tests
+        run: pytest -q
+
+      - name: Run shell tests
+        run: |
+          for test in tests/*.sh; do
+            echo "[RUN] $test"
+            bash "$test"
+          done

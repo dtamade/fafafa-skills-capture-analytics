@@ -20,6 +20,7 @@
   <a href="#快速开始">快速开始</a> |
   <a href="#安装">安装</a> |
   <a href="#使用方法">使用方法</a> |
+  <a href="docs/release-checklist.md">发布清单</a> |
   <a href="#安全">安全</a> |
   <a href="README.md">English</a>
 </p>
