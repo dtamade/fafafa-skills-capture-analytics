@@ -1,0 +1,134 @@
+{
+  "strategies": {
+    "full-crawl": {
+      "name": "Full Site Crawl",
+      "description": "Comprehensive exploration of all reachable pages",
+      "use_when": "General site analysis, API discovery, performance baseline",
+      "settings": {
+        "max_depth": 4,
+        "max_pages": 50,
+        "follow_external": false,
+        "click_interactive": true,
+        "delay_between_pages_ms": 1500
+      },
+      "steps": [
+        "Navigate to homepage",
+        "Take snapshot and identify all links",
+        "Visit each link (breadth-first)",
+        "On each page: record load time, identify interactive elements",
+        "Click buttons that may trigger AJAX",
+        "Continue until max_pages or max_depth reached"
+      ],
+      "skip_patterns": [
+        "*/logout*",
+        "*/signout*",
+        "*/delete*",
+        "*download*",
+        "*.pdf",
+        "*.zip"
+      ]
+    },
+    "targeted-flow": {
+      "name": "Targeted User Flow",
+      "description": "Follow a specific user journey through the site",
+      "use_when": "Testing specific features, user story validation",
+      "settings": {
+        "follow_redirects": true,
+        "wait_for_network_idle": true,
+        "delay_between_actions_ms": 1000
+      },
+      "example_flows": [
+        {
+          "name": "login-flow",
+          "steps": ["homepage", "login-page", "enter-credentials", "submit", "dashboard"]
+        },
+        {
+          "name": "purchase-flow",
+          "steps": ["product-page", "add-to-cart", "cart", "checkout", "payment", "confirmation"]
+        },
+        {
+          "name": "profile-update",
+          "steps": ["login", "dashboard", "profile", "edit", "save", "verify"]
+        }
+      ]
+    },
+    "api-discovery": {
+      "name": "API Endpoint Discovery",
+      "description": "Focus on finding and cataloging backend API endpoints",
+      "use_when": "Mapping API surface, understanding backend architecture",
+      "settings": {
+        "focus_on_ajax": true,
+        "trigger_all_interactive": true,
+        "ignore_static_resources": true
+      },
+      "high_yield_interactions": [
+        "Search boxes with autocomplete",
+        "Filter/sort controls",
+        "Infinite scroll or 'Load more' buttons",
+        "Tab switches that load content",
+        "Modals and popups",
+        "Form submissions"
+      ]
+    },
+    "performance-probe": {
+      "name": "Performance Stress Probe",
+      "description": "Rapid navigation to stress-test performance",
+      "use_when": "Finding slow endpoints, capacity testing",
+      "settings": {
+        "rapid_navigation": true,
+        "delay_between_pages_ms": 500,
+        "parallel_requests": false,
+        "measure_timing": true
+      },
+      "focus_areas": [
+        "Pages with heavy data loading",
+        "Search with complex queries",
+        "Dashboard with multiple widgets",
+        "Report generation",
+        "File uploads/downloads"
+      ]
+    },
+    "manual-assist": {
+      "name": "Manual Assistance Mode",
+      "description": "AI assists while user operates manually",
+      "use_when": "Complex authentication, captchas, sensitive operations",
+      "settings": {
+        "ai_passive": true,
+        "suggest_actions": true,
+        "monitor_network": true
+      },
+      "ai_role": [
+        "Start capture when user is ready",
+        "Monitor and report interesting network activity",
+        "Suggest next actions based on observations",
+        "Stop capture on user signal",
+        "Analyze and report"
+      ]
+    },
+    "security-audit": {
+      "name": "Security-Focused Audit",
+      "description": "Check for common security misconfigurations",
+      "use_when": "Security assessment, vulnerability discovery",
+      "settings": {
+        "check_headers": true,
+        "check_cookies": true,
+        "check_https": true,
+        "check_sensitive_urls": true
+      },
+      "checks": [
+        "Missing security headers (HSTS, CSP, X-Frame-Options)",
+        "Insecure cookies (missing HttpOnly, Secure, SameSite)",
+        "Mixed content (HTTP on HTTPS pages)",
+        "Sensitive data in URLs",
+        "Verbose error messages",
+        "Information disclosure in headers"
+      ]
+    }
+  },
+  "defaults": {
+    "timeout_per_page_ms": 30000,
+    "network_idle_timeout_ms": 5000,
+    "screenshot_on_error": true,
+    "user_agent": "Mozilla/5.0 (capture-analytics skill)"
+  }
+}

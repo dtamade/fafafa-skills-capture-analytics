@@ -1,0 +1,70 @@
+{
+  "capture-analytics": {
+    "type": "domain",
+    "enforcement": "suggest",
+    "priority": "high",
+    "description": "AI-driven autonomous network traffic capture and deep analysis using mitmproxy and Playwright",
+    "promptTriggers": {
+      "keywords": [
+        "抓包",
+        "流量捕获",
+        "网络抓包",
+        "HTTP抓包",
+        "HTTPS抓包",
+        "请求捕获",
+        "mitmproxy",
+        "mitmdump",
+        "HAR文件",
+        "HAR分析",
+        "HAR 文件",
+        "请求重放",
+        "流量对比",
+        "网络调试",
+        "packet capture",
+        "traffic capture",
+        "capture traffic",
+        "network capture",
+        "request capture",
+        "network requests",
+        "replay request",
+        "compare requests",
+        "debug network",
+        "slow requests",
+        "error requests",
+        "API discovery",
+        "endpoint mapping",
+        "latency analysis",
+        "websocket抓包",
+        "ws流量",
+        "websocket capture",
+        "ws traffic",
+        "tls分析",
+        "ssl分析"
+      ],
+      "intentPatterns": [
+        "(抓包|捕获|拦截).*?(流量|请求|HTTP|网络|API)",
+        "(流量|请求|HTTP|网络).*?(抓包|捕获|分析|拦截)",
+        "帮我(抓一下|捕获|分析).*?(网络|请求|流量)",
+        "(capture|intercept|sniff).*?(traffic|requests|network|HTTP|API)",
+        "(traffic|requests|network).*?(capture|analysis|intercept)",
+        "mitmproxy|mitmdump|HAR.*?(分析|转换|file)",
+        "(重放|replay|对比|compare|diff).*?(请求|request)",
+        "(slow|error|failed|timeout).*?(request|response|API).*?(debug|分析|查看)",
+        "(请求|响应|接口).*?(慢|超时|错误|失败).*?(分析|调试|排查)",
+        "(websocket|ws).*?(流量|消息|分析|capture)",
+        "(tls|ssl|https).*?(握手|handshake|分析)"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "**/captures/*.flow",
+        "**/captures/*.har",
+        "**/captures/*.ai.json",
+        "**/captures/*.ai.md",
+        "**/captures/*.summary.md",
+        "**/captures/*.index.ndjson",
+        "**/captures/*.manifest.json"
+      ]
+    }
+  }
+}

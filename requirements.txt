@@ -1,0 +1,8 @@
+# fafafa-skills-capture-analytics Python dependencies
+#
+# Core dependency: mitmproxy is required for:
+#   - flow2har.py (flow → HAR conversion)
+#   - flow_report.py (flow → index/summary generation)
+#
+# All other Python scripts use only the standard library.
+mitmproxy>=10.0

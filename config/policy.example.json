@@ -1,0 +1,35 @@
+{
+  "$schema": "./policy.schema.json",
+  "version": "1",
+  "description": "Capture scope policy - defines which domains can be captured",
+
+  "scope": {
+    "allow_hosts": [
+      "example.com",
+      "*.example.com",
+      "api.example.com"
+    ],
+    "deny_hosts": [
+      "*.google.com",
+      "*.googleapis.com",
+      "accounts.*"
+    ]
+  },
+
+  "consent": {
+    "require_confirm": true,
+    "confirm_phrase": "YES_I_HAVE_AUTHORIZATION"
+  },
+
+  "audit": {
+    "fail_on_violation": true,
+    "log_violations": true
+  },
+
+  "_comments": {
+    "allow_hosts": "Whitelist - only these hosts will be captured. Supports wildcards (*)",
+    "deny_hosts": "Blacklist - these hosts are always ignored, even if in allow_hosts",
+    "require_confirm": "If true, --confirm flag is required to start capture",
+    "fail_on_violation": "If true, stop command returns error code on scope violation"
+  }
+}
