@@ -175,6 +175,7 @@ capture-session.sh status           # 检查抓包状态
 capture-session.sh validate <url>   # 验证 URL 格式和可达性
 capture-session.sh analyze          # 生成 AI 分析包
 capture-session.sh doctor           # 检查环境前置条件
+scripts/git-doctor.sh               # 诊断 Git 同步/鉴权/连通性
 capture-session.sh cleanup          # 清理旧的抓包数据
 capture-session.sh diff <a> <b>     # 对比两次抓包
 ```

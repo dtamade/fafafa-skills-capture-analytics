@@ -50,3 +50,6 @@ jobs:
             echo "[RUN] $test"
             bash "$test"
           done
+
+      - name: Run git-doctor smoke
+        run: ./scripts/git-doctor.sh --json --timeout 10

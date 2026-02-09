@@ -175,6 +175,7 @@ capture-session.sh status           # Check if capture is running
 capture-session.sh validate <url>   # Validate URL format and reachability
 capture-session.sh analyze          # Generate AI analysis bundle
 capture-session.sh doctor           # Check environment prerequisites
+scripts/git-doctor.sh               # Diagnose git sync/auth/connectivity
 capture-session.sh cleanup          # Clean up old capture sessions
 capture-session.sh diff <a> <b>     # Compare two capture sessions
 ```
