@@ -2,26 +2,31 @@
 captures/
 *.flow
 *.har
-*.log
 
-# Generated policy files
+# Generated files
 .policy_*.json
+*.log
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 
 # IDE
 .idea/
 .vscode/
 *.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Temporary files
+# Temporary
 *.tmp
 *.bak
+
+# Development tools
 .ace-tool/
+.claude/
