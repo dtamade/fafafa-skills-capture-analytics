@@ -24,6 +24,9 @@ Checks:
   [FAIL] mitmproxy-py    - Python mitmproxy module must be importable
   [FAIL] port            - Port must be available
   [FAIL] policy          - Policy file must be valid (if specified)
+  [WARN] file-lock       - flock preferred, mkdir fallback on macOS
+  [WARN] sha256          - sha256sum/shasum/openssl for integrity
+  [WARN] shred           - Secure delete tool (optional)
   [WARN] ca-cert         - CA certificate status
   [WARN] playwright-mcp  - Playwright MCP availability
 
@@ -266,12 +269,48 @@ check_playwright_mcp() {
     fi
 }
 
+# Check: file locking mechanism
+check_file_lock() {
+    if command -v flock >/dev/null 2>&1; then
+        add_result "file-lock" "pass" "flock available" "Native file locking"
+    else
+        add_result "file-lock" "warn" "flock not found" "Using mkdir fallback (OK on macOS)"
+    fi
+}
+
+# Check: SHA-256 tool
+check_sha256() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        add_result "sha256" "pass" "sha256sum available" ""
+    elif command -v shasum >/dev/null 2>&1; then
+        add_result "sha256" "pass" "shasum available" "macOS fallback"
+    elif command -v openssl >/dev/null 2>&1; then
+        add_result "sha256" "pass" "openssl available" "openssl dgst fallback"
+    else
+        add_result "sha256" "warn" "No SHA-256 tool" "Flow integrity checks will be skipped"
+    fi
+}
+
+# Check: secure delete tool
+check_shred() {
+    if command -v shred >/dev/null 2>&1; then
+        add_result "shred" "pass" "shred available" ""
+    elif command -v gshred >/dev/null 2>&1; then
+        add_result "shred" "pass" "gshred available" "macOS Homebrew"
+    else
+        add_result "shred" "warn" "shred not found" "Secure delete (--secure) will fall back to rm"
+    fi
+}
+
 # Run all checks
 run_checks() {
     check_mitmdump
     check_python
     check_mitmproxy_py
     check_port "$CHECK_PORT"
+    check_file_lock
+    check_sha256
+    check_shred
     check_ca_cert
     check_playwright_mcp
 

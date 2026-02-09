@@ -113,7 +113,7 @@ def discover_sessions(captures_dir: str) -> list:
     manifest_pattern = os.path.join(captures_dir, "capture_*.manifest.json")
     for manifest_path in sorted(glob.glob(manifest_pattern)):
         bname = os.path.basename(manifest_path)
-        rid = bname.removeprefix("capture_").removesuffix(".manifest.json")
+        rid = bname[len("capture_"):-len(".manifest.json")]
         if not rid:
             continue
         seen.add(rid)
@@ -123,7 +123,7 @@ def discover_sessions(captures_dir: str) -> list:
     flow_pattern = os.path.join(captures_dir, "capture_*.flow")
     for flow_path in sorted(glob.glob(flow_pattern)):
         bname = os.path.basename(flow_path)
-        rid = bname.removeprefix("capture_").removesuffix(".flow")
+        rid = bname[len("capture_"):-len(".flow")]
         if not rid or rid in seen:
             continue
         seen.add(rid)
@@ -234,8 +234,24 @@ def delete_file(filepath: str, secure: bool, captures_dir: str = ""):
 
     if secure:
         try:
+            # Try shred first, then gshred (macOS Homebrew)
+            shred_cmd = "shred"
+            if subprocess.run(
+                ["which", "shred"], capture_output=True
+            ).returncode != 0:
+                if subprocess.run(
+                    ["which", "gshred"], capture_output=True
+                ).returncode == 0:
+                    shred_cmd = "gshred"
+                else:
+                    print(
+                        f"Warning: shred/gshred not found, falling back to rm for {filepath}",
+                        file=sys.stderr,
+                    )
+                    os.remove(filepath)
+                    return
             subprocess.run(
-                ["shred", "-n", "3", "-z", "-u", filepath],
+                [shred_cmd, "-n", "3", "-z", "-u", filepath],
                 check=True, capture_output=True,
             )
             return

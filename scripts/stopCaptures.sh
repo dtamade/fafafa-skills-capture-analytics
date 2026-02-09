@@ -152,9 +152,22 @@ CAPTURES_DIR="$TARGET_DIR/captures"
 ENV_FILE="$CAPTURES_DIR/proxy_info.env"
 LOCK_FILE="$CAPTURES_DIR/.capture.lock"
 
+# Cleanup on any exit (including Ctrl+C)
+_stop_cleanup() {
+    # Attempt proxy restoration if not yet done
+    if [[ "${_PROXY_RESTORED:-}" != "true" && -f "$ENV_FILE" ]]; then
+        local pm
+        pm="$(read_kv "PROGRAM_MODE" "$ENV_FILE")"
+        if [[ "$pm" != "true" ]]; then
+            restore_system_proxy_from_env "$ENV_FILE" 2>/dev/null || true
+        fi
+    fi
+    release_lock "$LOCK_FILE" 2>/dev/null || true
+}
+trap _stop_cleanup EXIT
+
 mkdir -p "$CAPTURES_DIR"
-exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
+if ! acquire_lock "$LOCK_FILE"; then
     err "Another capture operation is running. Please retry."
     exit 1
 fi
@@ -232,8 +245,10 @@ PROXY_STATUS="unchanged"
 if [[ "$PROGRAM_MODE" != "true" ]]; then
     if restore_system_proxy_from_env "$ENV_FILE"; then
         PROXY_STATUS="restored"
+        _PROXY_RESTORED="true"
     else
         PROXY_STATUS="restore-failed"
+        _PROXY_RESTORED="true"
     fi
 fi
 
@@ -378,8 +393,8 @@ fi
 STOPPED_AT="$(date +%Y-%m-%dT%H:%M:%S)"
 
 FLOW_SHA256=""
-if [[ -n "$FLOW_FILE" && -f "$FLOW_FILE" ]] && command -v sha256sum >/dev/null 2>&1; then
-    FLOW_SHA256="$(sha256sum "$FLOW_FILE" 2>/dev/null | awk '{print $1}')"
+if [[ -n "$FLOW_FILE" && -f "$FLOW_FILE" ]]; then
+    FLOW_SHA256="$(compute_sha256 "$FLOW_FILE" || true)"
 fi
 
 MANIFEST_STATUS="ok"

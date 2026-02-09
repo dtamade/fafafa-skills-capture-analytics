@@ -106,6 +106,11 @@ cleanup_on_error() {
         return 0
     fi
 
+    # Release lock on error
+    if [[ -n "${LOCK_FILE:-}" ]]; then
+        release_lock "$LOCK_FILE"
+    fi
+
     if [[ -n "$TMP_ENV_FILE" ]]; then
         rm -f "$TMP_ENV_FILE" 2>/dev/null || true
     fi
@@ -229,8 +234,7 @@ LOCK_FILE="$CAPTURES_DIR/.capture.lock"
 
 mkdir -p "$CAPTURES_DIR"
 chmod 700 "$CAPTURES_DIR" 2>/dev/null || true
-exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
+if ! acquire_lock "$LOCK_FILE"; then
     err "Another capture operation is running. Please retry."
     exit 1
 fi
@@ -371,6 +375,22 @@ for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
     sleep 0.2
 done
 
+# Final verification: port must be listening after startup loop
+if ! port_in_use "$LISTEN_PORT"; then
+    err "mitmdump started but port $LISTEN_PORT is not listening after timeout"
+    [[ -s "$LOG_FILE" ]] && tail -n 20 "$LOG_FILE" >&2
+    kill -TERM "$MITM_PID" 2>/dev/null || true
+    exit 1
+fi
+
+# Final check: ensure port is actually listening after timeout
+if ! port_in_use "$LISTEN_PORT"; then
+    err "mitmdump started but port $LISTEN_PORT is not listening after 6s timeout"
+    [[ -s "$LOG_FILE" ]] && tail -n 20 "$LOG_FILE" >&2
+    kill -TERM "$MITM_PID" 2>/dev/null || true
+    exit 1
+fi
+
 if [[ "$PROGRAM_MODE" != "true" && "$PROXY_BACKEND" != "none" && -n "$PROXY_BACKEND" ]]; then
     if ! set_system_proxy "$LISTEN_HOST" "$LISTEN_PORT"; then
         warn "Failed to update system proxy ($PROXY_BACKEND)"
@@ -418,9 +438,7 @@ mv "$TMP_ENV_FILE" "$ENV_FILE"
 TMP_ENV_FILE=""
 
 FLOW_SHA256=""
-if command -v sha256sum >/dev/null 2>&1; then
-    FLOW_SHA256="$(sha256sum "$FLOW_FILE" 2>/dev/null | awk '{print $1}')"
-fi
+FLOW_SHA256="$(compute_sha256 "$FLOW_FILE" || true)"
 
 python3 -c "
 import json, sys
@@ -490,4 +508,5 @@ echo " Then ask AI directly:"
 echo "   $(cd "$(dirname "$0")" && pwd)/ai.sh"
 echo "================================================"
 
+release_lock "$LOCK_FILE"
 trap - EXIT
