@@ -13,6 +13,20 @@ warn() {
     echo "[WARN] $*" >&2
 }
 
+# ── Python runtime auto-detection ───────────────────────────
+# Prefer project-local virtualenv when present.
+# This avoids system Python (PEP 668) install issues and keeps
+# all scripts on a consistent interpreter.
+_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_PROJECT_VENV_BIN="${_COMMON_DIR}/../.venv/bin"
+if [[ -x "${_PROJECT_VENV_BIN}/python3" ]]; then
+    case ":${PATH}:" in
+        *":${_PROJECT_VENV_BIN}:"*) ;;
+        *) export PATH="${_PROJECT_VENV_BIN}:${PATH}" ;;
+    esac
+    export CAPTURE_ANALYTICS_PYTHON="${_PROJECT_VENV_BIN}/python3"
+fi
+
 # ── Argument validation ──────────────────────────────────────
 # require_value_arg <option> <value>
 #   Exit with error if value is empty or looks like another option

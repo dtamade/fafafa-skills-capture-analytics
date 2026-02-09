@@ -20,6 +20,7 @@
   <a href="#quick-start">Quick Start</a> |
   <a href="#installation">Installation</a> |
   <a href="#usage">Usage</a> |
+  <a href="docs/release-checklist.md">Release Checklist</a> |
   <a href="#security">Security</a> |
   <a href="README_CN.md">中文文档</a>
 </p>
