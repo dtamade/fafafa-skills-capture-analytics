@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # stopCaptures.sh - Stop mitmproxy capture in current directory
+# INTERNAL: Prefer capture-session.sh stop for consistent workflow.
 
 set -euo pipefail
 

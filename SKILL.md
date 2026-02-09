@@ -21,24 +21,64 @@ description: >
 
 | Required Info | How to Get It | Default If Missing |
 |---------------|---------------|-------------------|
-| **Target URL** | Ask user: "请提供要分析的目标 URL" | ❌ **MUST ASK** - never guess |
-| **Analysis Goal** | Ask: "分析目的是什么？(性能/安全/调试/API发现/通用)" | `general` |
-| **Scope Restriction** | Ask if URL looks like internal/enterprise site | Auto-generate from domain |
-| **Authorization** | User must confirm they have permission to capture | ❌ **MUST CONFIRM** |
+| **Target URL** | Extract from user message or ask | ❌ **MUST HAVE** - never guess |
+| **Analysis Goal** | Extract from context or ask | `general` |
+| **Authorization** | User must confirm permission | ❌ **MUST CONFIRM** |
 
-**If user says vague things like "帮我抓包" or "analyze traffic":**
+### Smart Information Extraction
+
+**Before asking questions, AI MUST scan the conversation for existing answers:**
+
 ```
-AI MUST respond:
-"好的，我可以帮你进行网络流量抓包分析。请告诉我：
-1. 目标 URL 是什么？
-2. 分析目的是什么？（性能分析/安全检查/API发现/调试错误/通用分析）
-3. 你是否有权限对该网站进行流量捕获？"
+Step 1: Extract URL from user message
+  - Look for: http://, https://, or domain patterns (example.com)
+  - Look for: "分析 X", "抓包 X", "看看 X 的请求"
+  - Example: "帮我分析 example.com 的性能" → URL = https://example.com
+
+Step 2: Infer analysis goal from context
+  - Keywords → Goal mapping:
+    性能/慢/延迟/加载     → performance
+    安全/漏洞/头部/HTTPS  → security
+    调试/错误/失败/500    → debugging
+    API/接口/端点/请求    → api-discovery
+    (none of above)       → general
+
+Step 3: Check authorization
+  - If user says: "我有权限" / "是我的网站" / "授权了" → confirmed
+  - Otherwise: MUST ask for confirmation
 ```
 
-**NEVER:**
-- Guess or assume a URL
-- Start capture without explicit URL from user
-- Proceed without authorization confirmation
+**Only ask for MISSING information:**
+
+| User Says | AI Response |
+|-----------|-------------|
+| "帮我抓包" | "好的，请告诉我：1) 目标 URL 2) 你是否有权限？" |
+| "分析 https://example.com" | "好的，分析 example.com。你有权限对该网站进行流量捕获吗？" |
+| "帮我分析 example.com 的性能，这是我的网站" | ✅ 信息完整，直接执行（URL + goal + auth 都有） |
+| "看看 mysite.com 为什么这么慢，我有权限" | ✅ 信息完整（URL=mysite.com, goal=performance, auth=confirmed） |
+
+### Validation Before Capture
+
+**AI MUST validate URL before starting capture:**
+
+```bash
+# Step 1: Validate URL format
+capture-session.sh validate "https://example.com"
+# Returns: {"valid": true, "domain": "example.com", ...}
+
+# Step 2: (Optional) Check reachability
+capture-session.sh validate "https://example.com" --check-reachable
+# Returns: {"valid": true, "reachable": true, ...}
+
+# Step 3: Start capture only after validation passes
+capture-session.sh start "https://example.com" --confirm YES_I_HAVE_AUTHORIZATION
+```
+
+### NEVER:
+- Guess or assume a URL that user didn't provide
+- Start capture without explicit authorization confirmation
+- Skip URL validation step
+- Ask questions when information is already provided in the conversation
 
 ---
 

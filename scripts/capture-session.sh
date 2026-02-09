@@ -15,6 +15,7 @@ Commands:
   start <url>         Start capture for target URL
   stop                Stop capture and generate analysis
   status              Check if capture is running
+  validate <url>      Validate URL format (use before start)
   analyze             Generate AI analysis bundle
   doctor              Check environment prerequisites
   cleanup             Clean up old capture sessions
@@ -40,7 +41,9 @@ Scope Control:
 
 Examples:
   capture-session.sh doctor
-  capture-session.sh start https://example.com
+  capture-session.sh validate https://example.com
+  capture-session.sh validate https://example.com --check-reachable
+  capture-session.sh start https://example.com --confirm YES_I_HAVE_AUTHORIZATION
   capture-session.sh start https://example.com --allow-hosts "example.com,*.example.com"
   capture-session.sh stop
   capture-session.sh analyze
@@ -52,10 +55,11 @@ Examples:
 
 For AI Automation:
   1. AI calls: capture-session.sh doctor (verify environment)
-  2. AI calls: capture-session.sh start <url> --confirm YES_I_HAVE_AUTHORIZATION
-  3. AI uses Playwright with proxy 127.0.0.1:18080
-  4. AI calls: capture-session.sh stop
-  5. AI reads: captures/latest.ai.json
+  2. AI calls: capture-session.sh validate <url> (validate URL format)
+  3. AI calls: capture-session.sh start <url> --confirm YES_I_HAVE_AUTHORIZATION
+  4. AI uses Playwright with proxy 127.0.0.1:18080
+  5. AI calls: capture-session.sh stop
+  6. AI reads: captures/latest.ai.json
 EOF
 }
 
@@ -168,6 +172,12 @@ done
 
 case "$COMMAND" in
     start)
+        # Accept URL from TARGET_URL or first EXTRA_ARG
+        if [[ -z "$TARGET_URL" && ${#EXTRA_ARGS[@]} -gt 0 ]]; then
+            TARGET_URL="${EXTRA_ARGS[0]}"
+            EXTRA_ARGS=("${EXTRA_ARGS[@]:1}")
+        fi
+
         if [[ -z "$TARGET_URL" ]]; then
             err "Target URL required for start command"
             exit 1
@@ -178,6 +188,15 @@ case "$COMMAND" in
             err "Use: capture-session.sh start <url> --confirm YES_I_HAVE_AUTHORIZATION"
             exit 1
         fi
+
+        # Validate URL format
+        URL_VALIDATION="$(python3 "$SCRIPT_DIR/validate_url.py" "$TARGET_URL" 2>/dev/null)" || {
+            URL_ERROR="$(echo "$URL_VALIDATION" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error','Invalid URL'))" 2>/dev/null || echo "Invalid URL format")"
+            err "URL validation failed: $URL_ERROR"
+            exit 1
+        }
+        # Use normalized URL
+        TARGET_URL="$(echo "$URL_VALIDATION" | python3 -c "import sys,json; print(json.load(sys.stdin)['normalized_url'])")"
 
         # Generate default scope from target URL if not specified
         TARGET_HOST="$(python3 "$SCRIPT_DIR/policy.py" generate "$TARGET_URL" 2>/dev/null | python3 -c "import sys,json; p=json.load(sys.stdin); print(','.join(p['scope']['allow_hosts']))" 2>/dev/null || echo "")"
@@ -261,6 +280,34 @@ case "$COMMAND" in
         [[ -n "$POLICY_FILE" ]] && DOCTOR_CMD+=(--policy "$POLICY_FILE")
 
         "${DOCTOR_CMD[@]}"
+        ;;
+
+    validate)
+        # Validate URL without starting capture
+        # Accept URL from TARGET_URL or first EXTRA_ARG (for non-domain-like inputs)
+        URL_TO_VALIDATE="$TARGET_URL"
+        if [[ -z "$URL_TO_VALIDATE" && ${#EXTRA_ARGS[@]} -gt 0 ]]; then
+            URL_TO_VALIDATE="${EXTRA_ARGS[0]}"
+            EXTRA_ARGS=("${EXTRA_ARGS[@]:1}")
+        fi
+
+        if [[ -z "$URL_TO_VALIDATE" ]]; then
+            err "URL required for validate command"
+            exit 1
+        fi
+
+        VALIDATE_CMD=(python3 "$SCRIPT_DIR/validate_url.py" "$URL_TO_VALIDATE")
+
+        # Add reachability check if requested
+        for arg in "${EXTRA_ARGS[@]}"; do
+            case "$arg" in
+                --check-reachable|-c)
+                    VALIDATE_CMD+=(--check-reachable)
+                    ;;
+            esac
+        done
+
+        "${VALIDATE_CMD[@]}"
         ;;
 
     cleanup)

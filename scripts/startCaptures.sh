@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # startCaptures.sh - Start mitmproxy capture in current directory
+# INTERNAL: This script should be called via capture-session.sh, not directly.
+#           Direct invocation bypasses authorization checks.
 
 set -euo pipefail
 
