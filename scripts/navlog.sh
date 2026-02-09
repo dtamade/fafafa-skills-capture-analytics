@@ -96,6 +96,15 @@ fi
 COMMAND="$1"
 shift
 
+require_value_arg() {
+    local opt="$1"
+    local value="${2:-}"
+    if [[ -z "$value" || "$value" == -* ]]; then
+        err "Option $opt requires a value"
+        exit 1
+    fi
+}
+
 WORK_DIR="$(pwd)"
 NAVLOG_FILE=""
 
@@ -112,10 +121,12 @@ RAW_JSON=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -d|--dir)
+            require_value_arg "$1" "${2:-}"
             WORK_DIR="${2:-}"
             shift 2
             ;;
         -f|--file)
+            require_value_arg "$1" "${2:-}"
             NAVLOG_FILE="${2:-}"
             shift 2
             ;;

@@ -120,18 +120,23 @@ def sanitize_json_body(text: str) -> str:
         return sanitize_text(text)
 
 
-def _sanitize_dict(obj: Any) -> Any:
+_MAX_SANITIZE_DEPTH = 50
+
+
+def _sanitize_dict(obj: Any, _depth: int = 0) -> Any:
     """Recursively sanitize a dictionary."""
+    if _depth > _MAX_SANITIZE_DEPTH:
+        return "[nested too deep]" if isinstance(obj, (dict, list)) else obj
     if isinstance(obj, dict):
         result = {}
         for key, value in obj.items():
             if key.lower() in SENSITIVE_URL_PARAMS:
                 result[key] = '***REDACTED***'
             else:
-                result[key] = _sanitize_dict(value)
+                result[key] = _sanitize_dict(value, _depth + 1)
         return result
     elif isinstance(obj, list):
-        return [_sanitize_dict(item) for item in obj]
+        return [_sanitize_dict(item, _depth + 1) for item in obj]
     elif isinstance(obj, str):
         return sanitize_text(obj)
     else:

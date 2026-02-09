@@ -89,7 +89,7 @@ har_convert_with_mitmdump() {
     local flow_file="$1"
     local har_file="$2"
 
-    mitmdump -q -n -r "$flow_file" --set hardump="$har_file" >/dev/null 2>&1
+    mitmdump -q -n -r "$flow_file" --set hardump="$har_file" 9>&- >/dev/null 2>&1
 }
 
 har_convert_with_python() {
@@ -98,7 +98,7 @@ har_convert_with_python() {
     local script_dir
     script_dir="$(cd "$(dirname "$0")" && pwd)"
 
-    python3 "$script_dir/flow2har.py" "$flow_file" "$har_file" >/dev/null 2>&1
+    python3 "$script_dir/flow2har.py" "$flow_file" "$har_file" 9>&- >/dev/null 2>&1
 }
 
 TARGET_DIR="$(pwd)"

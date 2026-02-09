@@ -365,6 +365,9 @@ for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
         [[ -s "$LOG_FILE" ]] && tail -n 20 "$LOG_FILE" >&2
         exit 1
     fi
+    if port_in_use "$LISTEN_PORT"; then
+        break
+    fi
     sleep 0.2
 done
 
@@ -375,6 +378,8 @@ if [[ "$PROGRAM_MODE" != "true" && "$PROXY_BACKEND" != "none" && -n "$PROXY_BACK
         PROXY_APPLIED=true
     fi
 fi
+
+STARTED_AT="$(date +%Y-%m-%dT%H:%M:%S)"
 
 TMP_ENV_FILE="$ENV_FILE.tmp.$$"
 (umask 077 && cat >"$TMP_ENV_FILE" <<EOF
@@ -394,7 +399,7 @@ AI_MD_FILE=$AI_MD_FILE
 NAVLOG_FILE=$NAVLOG_FILE
 LISTEN_HOST=$LISTEN_HOST
 LISTEN_PORT=$LISTEN_PORT
-STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+STARTED_AT=$STARTED_AT
 ALLOW_HOSTS=$ALLOW_HOSTS
 DENY_HOSTS=$DENY_HOSTS
 SCOPE_POLICY_FILE=$SCOPE_POLICY_FILE
@@ -416,8 +421,6 @@ FLOW_SHA256=""
 if command -v sha256sum >/dev/null 2>&1; then
     FLOW_SHA256="$(sha256sum "$FLOW_FILE" 2>/dev/null | awk '{print $1}')"
 fi
-
-STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 python3 -c "
 import json, sys

@@ -2,6 +2,7 @@
 """Build AI-friendly analysis artifacts from capture manifest and index files."""
 
 import json
+import os
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -232,10 +233,12 @@ def main(argv):
     stats = calc_stats(entries)
     ai_payload = build_ai_json(manifest, stats)
 
-    with open(ai_json_path, "w", encoding="utf-8") as f:
+    fd = os.open(ai_json_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(ai_payload, f, indent=2, ensure_ascii=False)
 
-    with open(ai_md_path, "w", encoding="utf-8") as f:
+    fd = os.open(ai_md_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(render_ai_markdown(ai_payload))
 
     print(f"Generated {ai_json_path} and {ai_md_path}")

@@ -132,17 +132,27 @@ def discover_sessions(captures_dir: str) -> list:
 
 
 def session_files(captures_dir: str, run_id: str) -> list:
-    """Get all files belonging to a session."""
+    """Get all files belonging to a session.
+
+    Skips symlinks and files whose real path is outside captures_dir.
+    """
+    real_dir = os.path.realpath(captures_dir)
     files = []
     pattern = os.path.join(captures_dir, f"capture_{run_id}.*")
     for fpath in glob.glob(pattern):
-        if os.path.isfile(fpath):
-            files.append(fpath)
+        if os.path.islink(fpath):
+            continue
+        if not os.path.isfile(fpath):
+            continue
+        if not os.path.realpath(fpath).startswith(real_dir + os.sep):
+            continue
+        files.append(fpath)
 
     # Also include temp policy files
     policy_tmp = os.path.join(captures_dir, f".policy_{run_id}.json")
-    if os.path.isfile(policy_tmp):
-        files.append(policy_tmp)
+    if os.path.isfile(policy_tmp) and not os.path.islink(policy_tmp):
+        if os.path.realpath(policy_tmp).startswith(real_dir + os.sep):
+            files.append(policy_tmp)
 
     return files
 
@@ -200,8 +210,25 @@ def update_latest_links(captures_dir: str):
                 pass
 
 
-def delete_file(filepath: str, secure: bool):
-    """Delete a single file, optionally with shred."""
+def delete_file(filepath: str, secure: bool, captures_dir: str = ""):
+    """Delete a single file, optionally with shred.
+
+    If captures_dir is provided, verifies the file is within that directory.
+    Refuses to operate on symlinks.
+    """
+    if os.path.islink(filepath):
+        try:
+            os.remove(filepath)
+        except OSError:
+            pass
+        return
+
+    if captures_dir:
+        real_dir = os.path.realpath(captures_dir)
+        real_file = os.path.realpath(filepath)
+        if not real_file.startswith(real_dir + os.sep):
+            return
+
     if secure:
         try:
             subprocess.run(
@@ -273,14 +300,16 @@ def run_cleanup(captures_dir: str, keep_days=None, keep_size=None,
         cumulative = 0
         budget_exceeded = False
 
-        # Walk from newest to oldest
-        for rid in reversed(sorted_ids):
+        # Walk from newest to oldest; always keep the newest session
+        reversed_ids = list(reversed(sorted_ids))
+        for i, rid in enumerate(reversed_ids):
             sz = sz_map[rid]
             if budget_exceeded:
                 to_delete.add(rid)
                 continue
             cumulative += sz
-            if cumulative > max_bytes:
+            if cumulative > max_bytes and i > 0:
+                # Only delete if not the newest session (i > 0)
                 to_delete.add(rid)
                 budget_exceeded = True
 
@@ -315,7 +344,7 @@ def run_cleanup(captures_dir: str, keep_days=None, keep_size=None,
 
         if not dry_run:
             for f in files:
-                delete_file(f, secure)
+                delete_file(f, secure, captures_dir)
 
         details.append({
             "run_id": rid,

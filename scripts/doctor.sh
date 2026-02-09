@@ -46,6 +46,15 @@ else
     NC=''
 fi
 
+require_value_arg() {
+    local opt="$1"
+    local value="${2:-}"
+    if [[ -z "$value" || "$value" == -* ]]; then
+        echo "[ERROR] Option $opt requires a value" >&2
+        exit 1
+    fi
+}
+
 CHECK_PORT="18080"
 POLICY_FILE=""
 JSON_OUTPUT=false
@@ -54,10 +63,12 @@ STRICT_MODE=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -P|--port)
+            require_value_arg "$1" "${2:-}"
             CHECK_PORT="${2:-18080}"
             shift 2
             ;;
         --policy)
+            require_value_arg "$1" "${2:-}"
             POLICY_FILE="${2:-}"
             shift 2
             ;;
