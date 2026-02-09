@@ -63,6 +63,15 @@ err() {
     echo "[ERROR] $*" >&2
 }
 
+require_value_arg() {
+    local opt="$1"
+    local value="${2:-}"
+    if [[ -z "$value" || "$value" == -* ]]; then
+        err "Option $opt requires a value"
+        exit 1
+    fi
+}
+
 # Safe key-value reader (whitelist approach, no code execution)
 # Shared utilities
 # shellcheck source=common.sh
@@ -103,34 +112,42 @@ shift
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -d|--dir)
+            require_value_arg "$1" "${2:-}"
             WORK_DIR="${2:-}"
             shift 2
             ;;
         -P|--port)
+            require_value_arg "$1" "${2:-}"
             PROXY_PORT="${2:-}"
             shift 2
             ;;
         --allow-hosts)
+            require_value_arg "$1" "${2:-}"
             ALLOW_HOSTS="${2:-}"
             shift 2
             ;;
         --deny-hosts)
+            require_value_arg "$1" "${2:-}"
             DENY_HOSTS="${2:-}"
             shift 2
             ;;
         --policy)
+            require_value_arg "$1" "${2:-}"
             POLICY_FILE="${2:-}"
             shift 2
             ;;
         --confirm)
+            require_value_arg "$1" "${2:-}"
             CONFIRM_PHRASE="${2:-}"
             shift 2
             ;;
         --keep-days)
+            require_value_arg "$1" "${2:-}"
             KEEP_DAYS="${2:-}"
             shift 2
             ;;
         --keep-size)
+            require_value_arg "$1" "${2:-}"
             KEEP_SIZE="${2:-}"
             shift 2
             ;;

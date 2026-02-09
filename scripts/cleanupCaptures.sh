@@ -75,6 +75,10 @@ while [[ $# -gt 0 ]]; do
         --keep-size)
             KEEP_SIZE="${2:-}"
             [[ -z "$KEEP_SIZE" ]] && { err "--keep-size requires a size value"; exit 1; }
+            if ! [[ "$KEEP_SIZE" =~ ^[0-9]+\.?[0-9]*[kKmMgGbB]*$ ]]; then
+                err "--keep-size invalid format: $KEEP_SIZE (examples: 500M, 1G, 1024K)"
+                exit 1
+            fi
             shift 2
             ;;
         --secure)

@@ -131,30 +131,37 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --action)
+            require_value_arg "$1" "${2:-}"
             ACTION="${2:-}"
             shift 2
             ;;
         --url)
+            require_value_arg "$1" "${2:-}"
             URL="${2:-}"
             shift 2
             ;;
         --title)
+            require_value_arg "$1" "${2:-}"
             TITLE="${2:-}"
             shift 2
             ;;
         --selector)
+            require_value_arg "$1" "${2:-}"
             SELECTOR="${2:-}"
             shift 2
             ;;
         --value)
+            require_value_arg "$1" "${2:-}"
             VALUE="${2:-}"
             shift 2
             ;;
         --note)
+            require_value_arg "$1" "${2:-}"
             NOTE="${2:-}"
             shift 2
             ;;
         --duration)
+            require_value_arg "$1" "${2:-}"
             DURATION="${2:-}"
             shift 2
             ;;

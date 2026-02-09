@@ -6,6 +6,7 @@ for mitmproxy allow_hosts/ignore_hosts configuration.
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -292,7 +293,8 @@ def main():
         policy = generate_default_policy(args.url)
         output = json.dumps(policy, indent=2, ensure_ascii=False)
         if args.output:
-            with open(args.output, 'w', encoding='utf-8') as f:
+            fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
                 f.write(output)
             print(f'Policy written to {args.output}', file=sys.stderr)
         else:

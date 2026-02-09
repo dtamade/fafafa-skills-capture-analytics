@@ -300,11 +300,11 @@ REPORT_ERROR_LOG="$CAPTURES_DIR/report_error.log"
 if [[ -n "$FLOW_FILE" && -f "$FLOW_FILE" && -s "$FLOW_FILE" ]]; then
     if command -v python3 >/dev/null 2>&1 && [[ -f "$SCRIPT_DIR/flow_report.py" ]]; then
         # P1-3: Check Python mitmproxy module
-        if ! python3 -c "from mitmproxy.io import FlowReader" 2>/dev/null; then
+        if ! python3 -c "from mitmproxy.io import FlowReader" 9>&- 2>/dev/null; then
             REPORT_STATUS="missing-mitmproxy-module"
             echo "Python mitmproxy module not found. Install with: pip install mitmproxy" > "$REPORT_ERROR_LOG"
         # P1-4: Preserve error output for debugging
-        elif python3 "$SCRIPT_DIR/flow_report.py" "$FLOW_FILE" "$INDEX_FILE" "$SUMMARY_FILE" 2>"$REPORT_ERROR_LOG"; then
+        elif python3 "$SCRIPT_DIR/flow_report.py" "$FLOW_FILE" "$INDEX_FILE" "$SUMMARY_FILE" 9>&- 2>"$REPORT_ERROR_LOG"; then
             REPORT_STATUS="ok"
             rm -f "$REPORT_ERROR_LOG"
         else
@@ -322,7 +322,7 @@ AI_BRIEF_ERROR_LOG="$CAPTURES_DIR/ai_brief_error.log"
 if [[ "$REPORT_STATUS" == "ok" && -f "$MANIFEST_FILE" && -f "$INDEX_FILE" ]]; then
     if command -v python3 >/dev/null 2>&1 && [[ -f "$SCRIPT_DIR/ai_brief.py" ]]; then
         # P1-4: Preserve error output for debugging
-        if python3 "$SCRIPT_DIR/ai_brief.py" "$MANIFEST_FILE" "$INDEX_FILE" "$AI_JSON_FILE" "$AI_MD_FILE" 2>"$AI_BRIEF_ERROR_LOG"; then
+        if python3 "$SCRIPT_DIR/ai_brief.py" "$MANIFEST_FILE" "$INDEX_FILE" "$AI_JSON_FILE" "$AI_MD_FILE" 9>&- 2>"$AI_BRIEF_ERROR_LOG"; then
             AI_BRIEF_STATUS="ok"
             rm -f "$AI_BRIEF_ERROR_LOG"
         else
@@ -356,13 +356,13 @@ if [[ -n "$ALLOW_HOSTS" || -n "$DENY_HOSTS" || -n "$SCOPE_POLICY_FILE" ]]; then
                 [[ -n "$DENY_HOSTS" ]] && AUDIT_CMD+=(--deny-hosts "$DENY_HOSTS")
             fi
 
-            if "${AUDIT_CMD[@]}" 2>/dev/null; then
+            if "${AUDIT_CMD[@]}" 9>&- 2>/dev/null; then
                 SCOPE_AUDIT_STATUS="pass"
             else
                 SCOPE_AUDIT_STATUS="violation"
                 # Count violations from audit file
                 if [[ -f "$SCOPE_AUDIT_FILE" ]]; then
-                    SCOPE_AUDIT_VIOLATIONS="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['outOfScopeCount'])" "$SCOPE_AUDIT_FILE" 2>/dev/null || echo 0)"
+                    SCOPE_AUDIT_VIOLATIONS="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['outOfScopeCount'])" "$SCOPE_AUDIT_FILE" 9>&- 2>/dev/null || echo 0)"
                 fi
             fi
         else
@@ -375,7 +375,7 @@ else
     SCOPE_AUDIT_STATUS="no-policy"
 fi
 
-STOPPED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+STOPPED_AT="$(date +%Y-%m-%dT%H:%M:%S)"
 
 FLOW_SHA256=""
 if [[ -n "$FLOW_FILE" && -f "$FLOW_FILE" ]] && command -v sha256sum >/dev/null 2>&1; then
@@ -424,7 +424,7 @@ json.dump(data, sys.stdout, indent=2, ensure_ascii=False)
   "$FLOW_FILE" "$FLOW_SHA256" "$HAR_FILE" "$HAR_STATUS" "$HAR_BACKEND_USED" \
   "$LOG_FILE" "$MANIFEST_FILE" "$INDEX_FILE" "$SUMMARY_FILE" "$REPORT_STATUS" \
   "$AI_JSON_FILE" "$AI_MD_FILE" "$AI_BRIEF_STATUS" "$NAVLOG_FILE" "$SCOPE_AUDIT_FILE" \
-  > "$MANIFEST_TMP"
+  9>&- > "$MANIFEST_TMP"
 then
     MANIFEST_STATUS="failed"
 else

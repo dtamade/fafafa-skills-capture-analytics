@@ -13,7 +13,8 @@ from datetime import datetime, timezone
 
 
 def load_index(path):
-    """Load an index.ndjson file into a list of dicts."""
+    """Load an index.ndjson file into a list of dicts (capped at 100000 entries)."""
+    MAX_ENTRIES = 100000
     entries = []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -21,6 +22,8 @@ def load_index(path):
             if not text:
                 continue
             entries.append(json.loads(text))
+            if len(entries) >= MAX_ENTRIES:
+                break
     return entries
 
 
@@ -354,14 +357,16 @@ def main(argv):
     # Output
     if json_out:
         report = render_diff_json(diff_result, baseline_path, current_path)
-        with open(json_out, "w", encoding="utf-8") as f:
+        fd = os.open(json_out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
         print(f"JSON diff report: {json_out}", file=sys.stderr)
 
     md_text = render_diff_markdown(diff_result, baseline_path, current_path)
 
     if md_out:
-        with open(md_out, "w", encoding="utf-8") as f:
+        fd = os.open(md_out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(md_text)
         print(f"Markdown diff report: {md_out}", file=sys.stderr)
 

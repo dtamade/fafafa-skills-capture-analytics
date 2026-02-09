@@ -42,6 +42,9 @@ def parse_size(size_str: str) -> int:
     except ValueError:
         raise ValueError(f"Invalid size format: {size_str}")
 
+    if num < 0:
+        raise ValueError(f"Size must not be negative: {size_str}")
+
     multipliers = {"k": 1024, "m": 1024**2, "g": 1024**3}
     return int(num * multipliers.get(suffix, 1))
 

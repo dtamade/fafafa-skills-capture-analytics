@@ -14,6 +14,7 @@ def load_manifest(path):
 
 
 def load_index(path):
+    MAX_ENTRIES = 100000
     entries = []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -21,6 +22,8 @@ def load_index(path):
             if not text:
                 continue
             entries.append(json.loads(text))
+            if len(entries) >= MAX_ENTRIES:
+                break
     return entries
 
 

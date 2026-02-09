@@ -5,6 +5,7 @@ Analyzes captured traffic index and checks for policy violations.
 """
 
 import json
+import os
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -23,14 +24,17 @@ def load_index(index_file: str) -> List[Dict]:
         index_file: Path to .index.ndjson file
 
     Returns:
-        List of index entry dicts
+        List of index entry dicts (capped at 100000 entries)
     """
+    MAX_ENTRIES = 100000
     entries = []
     with open(index_file, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line:
                 entries.append(json.loads(line))
+                if len(entries) >= MAX_ENTRIES:
+                    break
     return entries
 
 
@@ -170,7 +174,8 @@ def main():
 
     # Output
     if args.output:
-        with open(args.output, 'w', encoding='utf-8') as f:
+        fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
         print(f'Audit result written to {args.output}', file=sys.stderr)
 
