@@ -66,6 +66,21 @@ acquire_lock() {
         return 1
     fi
 
+    # Validate lock_path: reject dangerous characters that could enable injection
+    # Disallow: $, `, newline, carriage return, null byte patterns
+    if [[ "$lock_path" =~ [\$\`\"\'\(\)\{\}\;\&\|\<\>] ]] || \
+       [[ "$lock_path" == *$'\n'* ]] || \
+       [[ "$lock_path" == *$'\r'* ]]; then
+        echo "acquire_lock: unsafe characters in path: $lock_path" >&2
+        return 1
+    fi
+
+    # Reject empty path
+    if [[ -z "$lock_path" ]]; then
+        echo "acquire_lock: empty lock path" >&2
+        return 1
+    fi
+
     _detect_lock_backend
 
     if [[ "$_COMMON_LOCK_BACKEND" == "flock" ]]; then
@@ -164,4 +179,72 @@ read_kv() {
         line="${line:1:-1}"
     fi
     printf '%s' "$line"
+}
+
+# ── Path boundary validation ─────────────────────────────────
+# validate_path_within <path> <allowed_base>
+#   Validates that <path> resolves to a location within <allowed_base>.
+#   Rejects symlinks, path traversal, and paths outside boundary.
+#   Returns 0 if valid, 1 if invalid.
+validate_path_within() {
+    local path="$1"
+    local allowed_base="$2"
+
+    # Empty path is invalid
+    if [[ -z "$path" ]]; then
+        echo "validate_path_within: empty path" >&2
+        return 1
+    fi
+
+    # Empty base is invalid
+    if [[ -z "$allowed_base" ]]; then
+        echo "validate_path_within: empty allowed_base" >&2
+        return 1
+    fi
+
+    # Get canonical base (must exist)
+    local canonical_base
+    canonical_base="$(cd "$allowed_base" 2>/dev/null && pwd -P)" || {
+        echo "validate_path_within: allowed_base does not exist: $allowed_base" >&2
+        return 1
+    }
+
+    # For existing paths, use realpath; for new paths, validate parent
+    local canonical_path
+    if [[ -e "$path" ]]; then
+        # Reject symlinks pointing outside
+        if [[ -L "$path" ]]; then
+            local link_target
+            link_target="$(readlink -f "$path" 2>/dev/null)" || {
+                echo "validate_path_within: cannot resolve symlink: $path" >&2
+                return 1
+            }
+            canonical_path="$link_target"
+        else
+            canonical_path="$(cd "$(dirname "$path")" 2>/dev/null && pwd -P)/$(basename "$path")" || {
+                echo "validate_path_within: cannot resolve path: $path" >&2
+                return 1
+            }
+        fi
+    else
+        # Path doesn't exist yet - validate parent directory
+        local parent_dir
+        parent_dir="$(dirname "$path")"
+        if [[ ! -d "$parent_dir" ]]; then
+            echo "validate_path_within: parent directory does not exist: $parent_dir" >&2
+            return 1
+        fi
+        canonical_path="$(cd "$parent_dir" 2>/dev/null && pwd -P)/$(basename "$path")" || {
+            echo "validate_path_within: cannot resolve parent: $parent_dir" >&2
+            return 1
+        }
+    fi
+
+    # Check if path starts with base (with trailing slash to prevent prefix attacks)
+    if [[ "$canonical_path" != "$canonical_base"/* && "$canonical_path" != "$canonical_base" ]]; then
+        echo "validate_path_within: path outside boundary: $path (resolved: $canonical_path, base: $canonical_base)" >&2
+        return 1
+    fi
+
+    return 0
 }

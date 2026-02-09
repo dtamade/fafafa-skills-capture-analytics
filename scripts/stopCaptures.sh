@@ -214,6 +214,34 @@ if [[ -z "$AI_MD_FILE" ]]; then
     AI_MD_FILE="${BASE_NO_EXT}.ai.md"
 fi
 
+# ── P0-2 Fix: Validate all file paths are within CAPTURES_DIR ──
+# This prevents proxy_info.env tampering from causing arbitrary file operations
+validate_capture_paths() {
+    local paths_to_check=(
+        "$FLOW_FILE"
+        "$HAR_FILE"
+        "$LOG_FILE"
+        "$MANIFEST_FILE"
+        "$INDEX_FILE"
+        "$SUMMARY_FILE"
+        "$AI_JSON_FILE"
+        "$AI_MD_FILE"
+        "$NAVLOG_FILE"
+    )
+
+    for p in "${paths_to_check[@]}"; do
+        # Skip empty paths
+        [[ -z "$p" ]] && continue
+        if ! validate_path_within "$p" "$CAPTURES_DIR" 2>/dev/null; then
+            err "Security: path outside captures directory: $p"
+            err "Possible proxy_info.env tampering. Aborting."
+            exit 1
+        fi
+    done
+}
+
+validate_capture_paths
+
 STOP_STATUS="not-running"
 STOP_RC=0
 stop_pid "$MITM_PID" || STOP_RC=$?

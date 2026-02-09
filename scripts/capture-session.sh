@@ -221,7 +221,8 @@ case "$COMMAND" in
         [[ -n "$DENY_HOSTS" ]] && START_CMD+=(--deny-hosts "$DENY_HOSTS")
         [[ -n "$POLICY_FILE" ]] && START_CMD+=(--policy "$POLICY_FILE")
 
-        "${START_CMD[@]}"
+        # P1-2: Set authorization token for startCaptures.sh
+        _CAPTURE_AUTHORIZED=YES "${START_CMD[@]}"
 
         echo ""
         echo "=== Next Steps for AI ==="

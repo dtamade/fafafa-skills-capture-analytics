@@ -95,12 +95,52 @@ def validate_url(url: str) -> tuple[bool, str, Optional[str]]:
     return True, url, hostname
 
 
-def check_reachable(url: str, timeout: float = 5.0) -> tuple[bool, Optional[str]]:
+def is_private_ip(hostname: str) -> bool:
+    """Check if hostname is a private/loopback IP address.
+
+    Args:
+        hostname: Hostname or IP address to check
+
+    Returns:
+        True if private/loopback, False otherwise
+    """
+    import ipaddress
+
+    # Check for localhost
+    if hostname == 'localhost':
+        return True
+
+    try:
+        ip = ipaddress.ip_address(hostname)
+        return ip.is_private or ip.is_loopback or ip.is_link_local
+    except ValueError:
+        # Not an IP address, could be a hostname
+        pass
+
+    # Check for common private hostname patterns
+    private_patterns = [
+        'localhost',
+        '*.local',
+        '*.internal',
+        '*.lan',
+        '*.localdomain',
+    ]
+    hostname_lower = hostname.lower()
+    if hostname_lower.endswith('.local') or hostname_lower.endswith('.internal'):
+        return True
+    if hostname_lower.endswith('.lan') or hostname_lower.endswith('.localdomain'):
+        return True
+
+    return False
+
+
+def check_reachable(url: str, timeout: float = 5.0, allow_private: bool = False) -> tuple[bool, Optional[str]]:
     """Check if URL is reachable (DNS resolves and port responds).
 
     Args:
         url: URL to check
         timeout: Connection timeout in seconds
+        allow_private: Allow private/loopback addresses (default: False)
 
     Returns:
         Tuple of (is_reachable, error_message)
@@ -113,41 +153,62 @@ def check_reachable(url: str, timeout: float = 5.0) -> tuple[bool, Optional[str]
         if port is None:
             port = 443 if parsed.scheme == 'https' else 80
 
+        # P2-1 Fix: Block private/loopback by default to prevent SSRF/internal scanning
+        if not allow_private and is_private_ip(hostname):
+            return False, f'Private/loopback address blocked: {hostname}. Use --allow-private to override.'
+
         # DNS resolution
         try:
-            socket.getaddrinfo(hostname, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            addrs = socket.getaddrinfo(hostname, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
         except socket.gaierror as e:
             return False, f'DNS resolution failed: {e}'
 
-        # TCP connection test
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
+        # Check resolved IPs for private addresses
+        if not allow_private:
+            import ipaddress
+            for family, socktype, proto, canonname, sockaddr in addrs:
+                ip_str = sockaddr[0]
+                try:
+                    ip = ipaddress.ip_address(ip_str)
+                    if ip.is_private or ip.is_loopback or ip.is_link_local:
+                        return False, f'Resolved to private IP: {ip_str}. Use --allow-private to override.'
+                except ValueError:
+                    pass
 
-        try:
-            if parsed.scheme == 'https':
-                context = ssl.create_default_context()
-                # Allow self-signed certs for testing
-                context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE
-                sock = context.wrap_socket(sock, server_hostname=hostname)
+        # TCP connection test - try all resolved addresses
+        last_error = None
+        for family, socktype, proto, canonname, sockaddr in addrs:
+            sock = socket.socket(family, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
 
-            sock.connect((hostname, port))
-            sock.close()
-            return True, None
-
-        except socket.timeout:
-            return False, f'Connection timeout ({timeout}s)'
-        except ConnectionRefusedError:
-            return False, 'Connection refused'
-        except ssl.SSLError as e:
-            return False, f'SSL error: {e}'
-        except OSError as e:
-            return False, f'Connection error: {e}'
-        finally:
             try:
+                if parsed.scheme == 'https':
+                    context = ssl.create_default_context()
+                    # Allow self-signed certs for testing
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
+                    sock = context.wrap_socket(sock, server_hostname=hostname)
+
+                sock.connect(sockaddr)
                 sock.close()
-            except Exception:
-                pass
+                return True, None
+
+            except socket.timeout:
+                last_error = f'Connection timeout ({timeout}s)'
+            except ConnectionRefusedError:
+                last_error = 'Connection refused'
+            except ssl.SSLError as e:
+                last_error = f'SSL error: {e}'
+            except OSError as e:
+                last_error = f'Connection error: {e}'
+            finally:
+                try:
+                    sock.close()
+                except Exception:
+                    pass
+
+        # All addresses failed
+        return False, last_error or 'All connection attempts failed'
 
     except Exception as e:
         return False, f'Unexpected error: {e}'
@@ -163,6 +224,7 @@ Examples:
   %(prog)s "example.com"                    # Auto-adds https://
   %(prog)s "https://example.com" --check-reachable
   %(prog)s "https://example.com" --check-reachable --timeout 3
+  %(prog)s "http://localhost" --check-reachable --allow-private
 '''
     )
 
@@ -177,6 +239,11 @@ Examples:
         type=float,
         default=5.0,
         help='Timeout for reachability check in seconds (default: 5)'
+    )
+    parser.add_argument(
+        '--allow-private', '-p',
+        action='store_true',
+        help='Allow private/loopback addresses in reachability check'
     )
 
     args = parser.parse_args()
@@ -205,7 +272,11 @@ Examples:
 
     # Optional reachability check
     if args.check_reachable:
-        is_reachable, reach_error = check_reachable(normalized_url, args.timeout)
+        is_reachable, reach_error = check_reachable(
+            normalized_url,
+            args.timeout,
+            allow_private=args.allow_private
+        )
         result['reachable'] = is_reachable
         if not is_reachable:
             result['reachable_error'] = reach_error

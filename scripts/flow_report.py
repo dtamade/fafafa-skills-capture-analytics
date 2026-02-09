@@ -14,7 +14,12 @@ try:
     SANITIZE_ENABLED = True
 except ImportError:
     SANITIZE_ENABLED = False
-    print("Warning: sanitize module not found, sensitive data will NOT be redacted", file=sys.stderr)
+    # Will be checked in main() - fail-closed unless --allow-no-sanitize
+
+# Check for --allow-no-sanitize flag (must be before other args)
+ALLOW_NO_SANITIZE = '--allow-no-sanitize' in sys.argv
+if ALLOW_NO_SANITIZE:
+    sys.argv.remove('--allow-no-sanitize')
 
 
 def iso_utc(timestamp):
@@ -151,8 +156,17 @@ def write_summary(flow_file, summary_file, entries):
 
 def main(argv):
     if len(argv) != 4:
-        print(f"Usage: {argv[0]} <flow_file> <index_ndjson_file> <summary_md_file>")
+        print(f"Usage: {argv[0]} [--allow-no-sanitize] <flow_file> <index_ndjson_file> <summary_md_file>")
         return 1
+
+    # P1-1 Fix: Fail-closed if sanitization is unavailable
+    if not SANITIZE_ENABLED and not ALLOW_NO_SANITIZE:
+        print("Error: sanitize module not found. Sensitive data would be exposed.", file=sys.stderr)
+        print("Use --allow-no-sanitize to proceed anyway (NOT RECOMMENDED).", file=sys.stderr)
+        return 4
+
+    if not SANITIZE_ENABLED and ALLOW_NO_SANITIZE:
+        print("WARNING: Proceeding without sanitization - sensitive data will be exposed!", file=sys.stderr)
 
     flow_file = argv[1]
     index_file = argv[2]
