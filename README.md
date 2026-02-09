@@ -30,6 +30,18 @@ A Claude Code skill that gives AI the ability to **autonomously** capture and an
 
 That's it. Claude handles the rest: start proxy, drive browser, stop capture, analyze results.
 
+## Smart Input Collection
+
+The skill intelligently extracts information from your request:
+
+| You Say | AI Understands |
+|---------|----------------|
+| "帮我分析 example.com 的性能" | URL=example.com, Goal=performance |
+| "看看 mysite.com 为什么这么慢，我有权限" | URL=mysite.com, Goal=performance, Auth=confirmed |
+| "帮我抓包" | AI asks for URL and authorization |
+
+AI will only ask for **missing** information, not repeat questions you've already answered.
+
 ## Prerequisites
 
 ```bash
@@ -73,13 +85,23 @@ Claude will:
 ### Manual Mode
 
 ```bash
-# Start capture
-./scripts/capture-session.sh start https://example.com
+# Start capture (requires authorization confirmation)
+./scripts/capture-session.sh start https://example.com --confirm YES_I_HAVE_AUTHORIZATION
 
 # (User operates browser manually with proxy 127.0.0.1:18080)
 
 # Stop and analyze
 ./scripts/capture-session.sh stop
+```
+
+### Validate URL Before Capture
+
+```bash
+# Validate URL format
+./scripts/capture-session.sh validate https://example.com
+
+# Also check if reachable
+./scripts/capture-session.sh validate https://example.com --check-reachable
 ```
 
 ### With Scope Control
@@ -139,16 +161,18 @@ fafafa-skills-capture-analytics/
 │   ├── BROWSER_EXPLORATION.md  # Playwright exploration guide
 │   └── SECURITY_GUIDELINES.md  # Security & compliance
 ├── scripts/
-│   ├── startCaptures.sh        # Start mitmproxy
-│   ├── stopCaptures.sh         # Stop & process pipeline
+│   ├── capture-session.sh      # Unified entry point (start/stop/status/validate/...)
+│   ├── startCaptures.sh        # Start mitmproxy (internal)
+│   ├── stopCaptures.sh         # Stop & process pipeline (internal)
+│   ├── common.sh               # Shared shell utilities
 │   ├── proxy_utils.sh          # Cross-platform proxy management
-│   ├── capture-session.sh      # One-shot wrapper (start/stop/status/analyze/doctor/cleanup/diff/navlog)
 │   ├── analyzeLatest.sh        # Generate AI bundle from latest capture
 │   ├── ai.sh                   # Quick analysis entry point
 │   ├── doctor.sh               # Environment self-check
 │   ├── cleanupCaptures.sh      # Manage capture data lifecycle
 │   ├── cleanup.py              # Cleanup logic (Python)
 │   ├── navlog.sh               # Browser navigation event logger
+│   ├── validate_url.py         # URL validation and reachability check
 │   ├── diff_captures.py        # Compare two capture sessions
 │   ├── flow2har.py             # Flow → HAR converter
 │   ├── flow_report.py          # Index & summary generator
@@ -159,13 +183,9 @@ fafafa-skills-capture-analytics/
 ├── templates/
 │   ├── analysis-report.md      # Report template
 │   └── exploration-strategies.json
-└── tests/
-    ├── test_rules.py           # Trigger rule tests
-    ├── test_cleanup.py         # Cleanup logic tests
-    ├── test_doctor.sh          # Doctor self-check tests
-    ├── test_install.sh         # Install script tests
-    ├── test_navlog.sh          # Navigation log tests
-    └── test_read_kv.sh         # Key-value parser tests
+└── tests/                      # 120 tests (79 Python + 41 Shell)
+    ├── test_*.py               # Python unit tests
+    └── test_*.sh               # Shell integration tests
 ```
 
 ## Five-Phase Workflow
@@ -198,9 +218,10 @@ After capture:
 ### capture-session.sh (Unified Entry)
 
 ```bash
-capture-session.sh start <url>      # Start capture for target URL
+capture-session.sh start <url>      # Start capture (requires --confirm)
 capture-session.sh stop             # Stop capture and generate analysis
 capture-session.sh status           # Check if capture is running
+capture-session.sh validate <url>   # Validate URL format and reachability
 capture-session.sh analyze          # Generate AI analysis bundle
 capture-session.sh doctor           # Check environment prerequisites
 capture-session.sh cleanup          # Clean up old capture sessions
@@ -249,12 +270,35 @@ python3 scripts/diff_captures.py captures/a.index.ndjson captures/b.index.ndjson
 
 ## Security
 
-- Only capture traffic from **authorized** targets
-- Never capture credentials without explicit consent
+### Authorization Required
+
+- Capture requires explicit authorization: `--confirm YES_I_HAVE_AUTHORIZATION`
+- Direct invocation of internal scripts is blocked
+- AI must confirm authorization before starting capture
+
+### Sensitive Data Protection
+
+- Sensitive data (tokens, passwords, cookies) is automatically sanitized in outputs
+- Sanitization is **fail-closed**: if sanitize module fails, capture aborts
+- Use `--allow-no-sanitize` only in controlled test environments (NOT RECOMMENDED)
+
+### Scope Control
+
 - Use `--allow-hosts` or `--policy` to restrict capture scope
+- Default: auto-generates scope from target URL domain
+- Out-of-scope traffic is logged to `*.scope_audit.json`
+
+### Private Network Protection
+
+- URL validation blocks private/loopback IPs by default
+- Use `--allow-private` to override (for local development)
+
+### Data Lifecycle
+
 - Use `--secure` flag in cleanup for shred-based deletion
-- Sanitize sensitive data before sharing reports
-- See [SECURITY_GUIDELINES.md](references/SECURITY_GUIDELINES.md)
+- Default retention: 7 days or 500MB
+
+See [SECURITY_GUIDELINES.md](references/SECURITY_GUIDELINES.md) for full details.
 
 ## Triggers
 
