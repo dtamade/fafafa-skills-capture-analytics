@@ -22,27 +22,10 @@ Examples:
 EOF
 }
 
-warn() {
-    echo "[WARN] $*" >&2
-}
-
-err() {
-    echo "[ERROR] $*" >&2
-}
-
-require_value_arg() {
-    local opt="$1"
-    local value="${2:-}"
-    if [[ -z "$value" || "$value" == -* ]]; then
-        err "Option $opt requires a value"
-        exit 1
-    fi
-}
-
 # Cross-platform proxy management
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Shared utilities
+# Shared utilities (err, warn, require_value_arg, etc.)
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 
@@ -492,7 +475,7 @@ echo " AI MD file:     $AI_MD_FILE"
 echo " AI brief:       $AI_BRIEF_STATUS"
 echo " Scope audit:    $SCOPE_AUDIT_STATUS"
 if [[ "$SCOPE_AUDIT_STATUS" == "violation" ]]; then
-    echo " ⚠️  Violations:   $SCOPE_AUDIT_VIOLATIONS out-of-scope requests detected!"
+    echo " [!] Violations:  $SCOPE_AUDIT_VIOLATIONS out-of-scope requests detected!"
 fi
 echo " Manifest file:  $MANIFEST_FILE"
 echo " Manifest:       $MANIFEST_STATUS"
@@ -544,7 +527,7 @@ fi
 # Exit with code 3 if scope violations detected (partial success)
 if [[ "$SCOPE_AUDIT_STATUS" == "violation" ]]; then
     echo ""
-    echo "⚠️  WARNING: Out-of-scope traffic detected! Review $SCOPE_AUDIT_FILE"
+    echo "[!] WARNING: Out-of-scope traffic detected! Review $SCOPE_AUDIT_FILE"
     exit 3
 fi
 

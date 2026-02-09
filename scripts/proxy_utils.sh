@@ -7,6 +7,24 @@
 #   - macOS: networksetup
 #   - Program mode: no system proxy changes (Playwright uses --proxy-server)
 
+# ── Input validation helpers ─────────────────────────────────────────
+
+# Validate proxy host format (alphanumeric, dots, hyphens, colons for IPv6)
+_valid_proxy_host() {
+    local host="$1"
+    [[ -z "$host" ]] && return 0  # empty is OK (disabled)
+    [[ "$host" =~ ^[a-zA-Z0-9.:_-]+$ ]]
+}
+
+# Validate proxy port (1-65535)
+_valid_proxy_port() {
+    local port="$1"
+    [[ -z "$port" ]] && return 0  # empty is OK (disabled)
+    [[ "$port" =~ ^[0-9]+$ ]] && (( port >= 1 && port <= 65535 ))
+}
+
+# ── Platform detection ───────────────────────────────────────────────
+
 # Detect platform and available proxy tool
 detect_proxy_backend() {
     if [[ "$(uname -s)" == "Darwin" ]] && command -v networksetup >/dev/null 2>&1; then
@@ -239,6 +257,12 @@ restore_system_proxy_from_env() {
             http_port="$(read_kv "PREV_PROXY_HTTP_PORT" "$env_file")"
             https_host="$(read_kv "PREV_PROXY_HTTPS_HOST" "$env_file")"
             https_port="$(read_kv "PREV_PROXY_HTTPS_PORT" "$env_file")"
+            # Validate host/port format before passing to gsettings
+            if ! _valid_proxy_host "$http_host" || ! _valid_proxy_port "$http_port" \
+               || ! _valid_proxy_host "$https_host" || ! _valid_proxy_port "$https_port"; then
+                echo "[WARN] Invalid proxy host/port in env file, skipping restore" >&2
+                return 1
+            fi
             restore_gnome_proxy "$mode" "$http_host" "$http_port" "$https_host" "$https_port"
             ;;
         macos)
@@ -250,6 +274,12 @@ restore_system_proxy_from_env() {
             https_enabled="$(read_kv "PREV_PROXY_HTTPS_ENABLED" "$env_file")"
             https_host="$(read_kv "PREV_PROXY_HTTPS_HOST" "$env_file")"
             https_port="$(read_kv "PREV_PROXY_HTTPS_PORT" "$env_file")"
+            # Validate host/port format before passing to networksetup
+            if ! _valid_proxy_host "$http_host" || ! _valid_proxy_port "$http_port" \
+               || ! _valid_proxy_host "$https_host" || ! _valid_proxy_port "$https_port"; then
+                echo "[WARN] Invalid proxy host/port in env file, skipping restore" >&2
+                return 1
+            fi
             restore_macos_proxy "$service" "$http_enabled" "$http_host" "$http_port" "$https_enabled" "$https_host" "$https_port"
             ;;
         none)

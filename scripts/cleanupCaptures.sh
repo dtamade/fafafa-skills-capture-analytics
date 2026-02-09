@@ -40,9 +40,11 @@ Examples:
 EOF
 }
 
-err() {
-    echo "[ERROR] $*" >&2
-}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Shared utilities (err, etc.)
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 info() {
     echo "[cleanup] $*"

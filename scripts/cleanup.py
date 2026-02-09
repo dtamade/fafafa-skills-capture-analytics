@@ -148,14 +148,15 @@ def session_files(captures_dir: str, run_id: str) -> list:
             continue
         if not os.path.isfile(fpath):
             continue
-        if not os.path.realpath(fpath).startswith(real_dir + os.sep):
+        # Path escape check (with root directory special case)
+        if real_dir != os.sep and not os.path.realpath(fpath).startswith(real_dir + os.sep):
             continue
         files.append(fpath)
 
     # Also include temp policy files
     policy_tmp = os.path.join(captures_dir, f".policy_{run_id}.json")
     if os.path.isfile(policy_tmp) and not os.path.islink(policy_tmp):
-        if os.path.realpath(policy_tmp).startswith(real_dir + os.sep):
+        if real_dir == os.sep or os.path.realpath(policy_tmp).startswith(real_dir + os.sep):
             files.append(policy_tmp)
 
     return files
@@ -241,7 +242,7 @@ def delete_file(filepath: str, secure: bool, captures_dir: str = "",
     if captures_dir:
         real_dir = os.path.realpath(captures_dir)
         real_file = os.path.realpath(filepath)
-        if not real_file.startswith(real_dir + os.sep):
+        if real_dir != os.sep and not real_file.startswith(real_dir + os.sep):
             return
 
     if secure and shred_cmd:

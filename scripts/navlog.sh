@@ -37,12 +37,7 @@ Format (NDJSON, one event per line):
 EOF
 }
 
-err() {
-    echo "[ERROR] $*" >&2
-}
-
-# Safe key-value reader (reuse pattern from capture-session.sh)
-# Shared utilities
+# Shared utilities (err, require_value_arg, read_kv, etc.)
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 
@@ -95,15 +90,6 @@ fi
 
 COMMAND="$1"
 shift
-
-require_value_arg() {
-    local opt="$1"
-    local value="${2:-}"
-    if [[ -z "$value" || "$value" == -* ]]; then
-        err "Option $opt requires a value"
-        exit 1
-    fi
-}
 
 WORK_DIR="$(pwd)"
 NAVLOG_FILE=""

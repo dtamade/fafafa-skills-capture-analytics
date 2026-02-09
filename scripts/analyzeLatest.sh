@@ -21,18 +21,11 @@ Examples:
 EOF
 }
 
-err() {
-    echo "[ERROR] $*" >&2
-}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-require_value_arg() {
-    local opt="$1"
-    local value="${2:-}"
-    if [[ -z "$value" || "$value" == -* ]]; then
-        err "Option $opt requires a value"
-        exit 1
-    fi
-}
+# Shared utilities (err, require_value_arg, etc.)
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 TARGET_DIR="$(pwd)"
 OUT_FILE=""

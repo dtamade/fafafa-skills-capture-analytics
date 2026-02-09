@@ -2,6 +2,38 @@
 # common.sh - Shared utility functions for capture-analytics scripts
 # Source this file: source "$SCRIPT_DIR/common.sh"
 
+# ── Logging helpers ──────────────────────────────────────────
+# err "message"   - Print error to stderr
+# warn "message"  - Print warning to stderr
+err() {
+    echo "[ERROR] $*" >&2
+}
+
+warn() {
+    echo "[WARN] $*" >&2
+}
+
+# ── Argument validation ──────────────────────────────────────
+# require_value_arg <option> <value>
+#   Exit with error if value is empty or looks like another option
+require_value_arg() {
+    local opt="$1"
+    local value="${2:-}"
+    if [[ -z "$value" || "$value" == -* ]]; then
+        err "Option $opt requires a value"
+        exit 1
+    fi
+}
+
+# require_cmd <command>
+#   Exit with error if command is not in PATH
+require_cmd() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        err "Missing command: $1"
+        exit 1
+    fi
+}
+
 # ── Cross-platform file locking ──────────────────────────────
 # acquire_lock <lock_path> [fd_number]
 #   Acquires an exclusive non-blocking lock.

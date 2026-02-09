@@ -59,21 +59,7 @@ For AI Automation:
 EOF
 }
 
-err() {
-    echo "[ERROR] $*" >&2
-}
-
-require_value_arg() {
-    local opt="$1"
-    local value="${2:-}"
-    if [[ -z "$value" || "$value" == -* ]]; then
-        err "Option $opt requires a value"
-        exit 1
-    fi
-}
-
-# Safe key-value reader (whitelist approach, no code execution)
-# Shared utilities
+# Shared utilities (err, warn, require_value_arg, read_kv, etc.)
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 

@@ -38,29 +38,9 @@ Examples:
 EOF
 }
 
-warn() {
-    echo "[WARN] $*" >&2
-}
-
-err() {
-    echo "[ERROR] $*" >&2
-}
-
-require_cmd() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        err "Missing command: $1"
-        exit 1
-    fi
-}
-
-require_value_arg() {
-    local opt="$1"
-    local value="${2:-}"
-    if [[ -z "$value" || "$value" == -* ]]; then
-        err "Option $opt requires a value"
-        exit 1
-    fi
-}
+# Shared utilities (err, warn, require_value_arg, require_cmd, etc.)
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 port_in_use() {
     local port="$1"
@@ -77,10 +57,6 @@ port_in_use() {
 
     return 1
 }
-
-# Shared utilities
-# shellcheck source=common.sh
-source "$SCRIPT_DIR/common.sh"
 
 # Cross-platform proxy management
 # shellcheck source=proxy_utils.sh
