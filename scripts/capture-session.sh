@@ -64,23 +64,9 @@ err() {
 }
 
 # Safe key-value reader (whitelist approach, no code execution)
-read_kv() {
-    local key="$1"
-    local file="$2"
-    local line
-    local escaped_key
-
-    # M1 Fix: Escape regex special characters to prevent regex injection
-    escaped_key="$(printf '%s' "$key" | sed 's/[][\.*^$()+?{}|]/\\&/g')"
-    line="$(grep -E "^${escaped_key}=" "$file" 2>/dev/null | tail -n 1 || true)"
-    line="${line#*=}"
-    line="${line%$'\r'}"
-    line="${line#\"}"
-    line="${line%\"}"
-    line="${line#\'}"
-    line="${line%\'}"
-    printf '%s' "$line"
-}
+# Shared utilities
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 # P1-2 Fix: Check --help BEFORE extracting command
 for arg in "$@"; do

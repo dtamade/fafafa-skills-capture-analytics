@@ -126,21 +126,35 @@ RESULT="$("${PY_CMD[@]}" 2>&1)" || {
 
 # ── Parse JSON result and render human-friendly output ───────────────
 
-STATUS="$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))")"
+# Extract all fields in a single python3 call
+PARSED="$(python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+print(data.get('status', ''))
+print(data.get('message', ''))
+print(data.get('deleted', 0))
+print(data.get('kept', 0))
+print(data.get('files_removed', 0))
+print(data.get('bytes_freed_human', '0 B'))
+print(data.get('needs_latest_update', False))
+" <<< "$RESULT")"
+
+STATUS="$(sed -n '1p' <<< "$PARSED")"
 
 case "$STATUS" in
     no-dir|empty|nothing)
-        MSG="$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('message',''))")"
+        MSG="$(sed -n '2p' <<< "$PARSED")"
         info "$MSG"
         exit 0
         ;;
 esac
 
 # Render details for each deleted session
-DELETE_COUNT="$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['deleted'])")"
-KEPT_COUNT="$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['kept'])")"
-DELETE_FILES="$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['files_removed'])")"
-FREED_HUMAN="$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['bytes_freed_human'])")"
+DELETE_COUNT="$(sed -n '3p' <<< "$PARSED")"
+KEPT_COUNT="$(sed -n '4p' <<< "$PARSED")"
+DELETE_FILES="$(sed -n '5p' <<< "$PARSED")"
+FREED_HUMAN="$(sed -n '6p' <<< "$PARSED")"
+NEEDS_UPDATE="$(sed -n '7p' <<< "$PARSED")"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "=== DRY RUN - No files will be deleted ==="
@@ -164,7 +178,6 @@ for d in data.get('details', []):
 " <<< "$RESULT"
 
 # Symlinks update message
-NEEDS_UPDATE="$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('needs_latest_update', False))")"
 if [[ "$DRY_RUN" != "true" && "$NEEDS_UPDATE" == "True" ]]; then
     info "Updated latest.* symlinks"
 fi

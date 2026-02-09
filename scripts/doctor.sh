@@ -300,33 +300,40 @@ output_human() {
     echo "========================================"
 }
 
-# Output: JSON
+# Output: JSON (uses python3 for safe escaping)
 output_json() {
-    echo "{"
-    echo "  \"checks\": ["
-
-    local first=true
+    local items=()
     for result in "${RESULTS[@]}"; do
-        IFS='|' read -r name status message detail <<< "$result"
-
-        if [[ "$first" == "true" ]]; then
-            first=false
-        else
-            echo ","
-        fi
-
-        printf '    {"name": "%s", "status": "%s", "message": "%s", "detail": "%s"}' \
-            "$name" "$status" "$message" "$detail"
+        items+=("$result")
     done
 
-    echo ""
-    echo "  ],"
-    echo "  \"summary\": {"
-    echo "    \"total\": ${#RESULTS[@]},"
-    echo "    \"fail\": $FAIL_COUNT,"
-    echo "    \"warn\": $WARN_COUNT"
-    echo "  }"
-    echo "}"
+    python3 -c "
+import json, sys
+
+items = sys.argv[1:-2]
+fail_count = int(sys.argv[-2])
+warn_count = int(sys.argv[-1])
+
+checks = []
+for item in items:
+    parts = item.split('|', 3)
+    name = parts[0] if len(parts) > 0 else ''
+    status = parts[1] if len(parts) > 1 else ''
+    message = parts[2] if len(parts) > 2 else ''
+    detail = parts[3] if len(parts) > 3 else ''
+    checks.append({'name': name, 'status': status, 'message': message, 'detail': detail})
+
+data = {
+    'checks': checks,
+    'summary': {
+        'total': len(checks),
+        'fail': fail_count,
+        'warn': warn_count
+    }
+}
+json.dump(data, sys.stdout, indent=2, ensure_ascii=False)
+print()
+" "${items[@]}" "$FAIL_COUNT" "$WARN_COUNT"
 }
 
 # Main

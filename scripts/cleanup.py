@@ -7,6 +7,7 @@ wrapper to consume.
 """
 
 import glob
+import re
 import json
 import os
 import subprocess
@@ -66,6 +67,9 @@ def discover_sessions(captures_dir: str) -> list:
     sessions = []
 
     def emit_session(rid: str):
+        # Validate run_id format (digits and underscores only) to prevent glob injection
+        if not re.match(r'^[0-9_]+$', rid):
+            return
         # Parse timestamp from RUN_ID: YYYYMMDD_HHMMSS_PID
         started_at = ""
         parts = rid.split("_")

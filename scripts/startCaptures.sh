@@ -78,23 +78,9 @@ port_in_use() {
     return 1
 }
 
-read_kv() {
-    local key="$1"
-    local file="$2"
-    local line
-    local escaped_key
-
-    # M1 Fix: Escape regex special characters to prevent regex injection
-    escaped_key="$(printf '%s' "$key" | sed 's/[][\.*^$()+?{}|]/\\&/g')"
-    line="$(grep -E "^${escaped_key}=" "$file" | tail -n 1 || true)"
-    line="${line#*=}"
-    line="${line%$'\r'}"
-    line="${line#\"}"
-    line="${line%\"}"
-    line="${line#\'}"
-    line="${line%\'}"
-    printf '%s' "$line"
-}
+# Shared utilities
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 # Cross-platform proxy management
 # shellcheck source=proxy_utils.sh
@@ -212,6 +198,14 @@ if [[ -z "$LISTEN_HOST" ]]; then
     exit 1
 fi
 
+case "$LISTEN_HOST" in
+    127.0.0.1|::1|localhost) ;;
+    *)
+        warn "Binding to non-localhost address: $LISTEN_HOST"
+        warn "This exposes the proxy to the network. Ensure this is intentional."
+        ;;
+esac
+
 if ! [[ "$LISTEN_PORT" =~ ^[0-9]+$ ]] || (( LISTEN_PORT < 1 || LISTEN_PORT > 65535 )); then
     err "Invalid port: $LISTEN_PORT"
     exit 1
@@ -234,6 +228,7 @@ ENV_FILE="$CAPTURES_DIR/proxy_info.env"
 LOCK_FILE="$CAPTURES_DIR/.capture.lock"
 
 mkdir -p "$CAPTURES_DIR"
+chmod 700 "$CAPTURES_DIR" 2>/dev/null || true
 exec 9>"$LOCK_FILE"
 if ! flock -n 9; then
     err "Another capture operation is running. Please retry."
@@ -322,14 +317,14 @@ if [[ -n "$POLICY_FILE" ]]; then
     ALLOW_HOSTS_REGEX="$(echo "$POLICY_OUTPUT" | grep '^allow_hosts=' | cut -d= -f2-)"
     IGNORE_HOSTS_REGEX="$(echo "$POLICY_OUTPUT" | grep '^ignore_hosts=' | cut -d= -f2-)"
 elif [[ -n "$ALLOW_HOSTS" || -n "$DENY_HOSTS" ]]; then
-    # Generate temp policy from CLI args
+    # Generate temp policy from CLI args using Python for safe JSON encoding
     TEMP_POLICY="$CAPTURES_DIR/.policy_${RUN_ID}.json"
-    {
-        echo '{"scope":{'
-        echo "\"allow_hosts\":[$(echo "$ALLOW_HOSTS" | sed 's/,/","/g;s/^/"/;s/$/"/' | sed 's/""//' )],"
-        echo "\"deny_hosts\":[$(echo "$DENY_HOSTS" | sed 's/,/","/g;s/^/"/;s/$/"/' | sed 's/""//' )]"
-        echo '}}'
-    } > "$TEMP_POLICY"
+    python3 -c "
+import json, sys
+allow = [h.strip() for h in sys.argv[1].split(',') if h.strip()] if sys.argv[1] else []
+deny = [h.strip() for h in sys.argv[2].split(',') if h.strip()] if sys.argv[2] else []
+json.dump({'scope': {'allow_hosts': allow, 'deny_hosts': deny}}, sys.stdout, indent=2)
+" "$ALLOW_HOSTS" "$DENY_HOSTS" > "$TEMP_POLICY"
     SCOPE_POLICY_FILE="$TEMP_POLICY"
     # P0-2.1 Fix: Fail-closed - abort if policy compilation fails
     if POLICY_OUTPUT="$(python3 "$SCRIPT_DIR/policy.py" compile "$TEMP_POLICY" 2>&1)"; then
@@ -382,7 +377,7 @@ if [[ "$PROGRAM_MODE" != "true" && "$PROXY_BACKEND" != "none" && -n "$PROXY_BACK
 fi
 
 TMP_ENV_FILE="$ENV_FILE.tmp.$$"
-cat >"$TMP_ENV_FILE" <<EOF
+(umask 077 && cat >"$TMP_ENV_FILE" <<EOF
 MITM_PID=$MITM_PID
 PROGRAM_MODE=$PROGRAM_MODE
 TARGET_DIR=$TARGET_DIR
@@ -413,7 +408,7 @@ PREV_PROXY_SERVICE=$PREV_PROXY_SERVICE
 PREV_PROXY_HTTP_ENABLED=$PREV_PROXY_HTTP_ENABLED
 PREV_PROXY_HTTPS_ENABLED=$PREV_PROXY_HTTPS_ENABLED
 EOF
-chmod 600 "$TMP_ENV_FILE"
+)
 mv "$TMP_ENV_FILE" "$ENV_FILE"
 TMP_ENV_FILE=""
 
@@ -422,40 +417,50 @@ if command -v sha256sum >/dev/null 2>&1; then
     FLOW_SHA256="$(sha256sum "$FLOW_FILE" 2>/dev/null | awk '{print $1}')"
 fi
 
-cat >"$MANIFEST_FILE" <<EOF
-{
-  "schemaVersion": "1",
-  "runId": "${RUN_ID}",
-  "targetDir": "${TARGET_DIR}",
-  "capturesDir": "${CAPTURES_DIR}",
-  "startedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "programMode": ${PROGRAM_MODE},
-  "listen": {
-    "host": "${LISTEN_HOST}",
-    "port": ${LISTEN_PORT}
-  },
-  "process": {
-    "pid": ${MITM_PID},
-    "launcher": "mitmdump"
-  },
-  "files": {
-    "flow": "${FLOW_FILE}",
-    "har": "${HAR_FILE}",
-    "log": "${LOG_FILE}",
-    "index": "${INDEX_FILE}",
-    "summary": "${SUMMARY_FILE}",
-    "aiJson": "${AI_JSON_FILE}",
-    "aiMd": "${AI_MD_FILE}",
-    "navlog": "${NAVLOG_FILE}",
-    "stateEnv": "${ENV_FILE}",
-    "flowSha256AtStart": "${FLOW_SHA256}"
-  },
-  "rawDataPolicy": {
-    "immutable": true,
-    "description": "Raw capture files are not modified by analysis artifacts"
-  }
+STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+python3 -c "
+import json, sys
+data = {
+    'schemaVersion': '1',
+    'runId': sys.argv[1],
+    'targetDir': sys.argv[2],
+    'capturesDir': sys.argv[3],
+    'startedAt': sys.argv[4],
+    'programMode': sys.argv[5] == 'true',
+    'listen': {
+        'host': sys.argv[6],
+        'port': int(sys.argv[7])
+    },
+    'process': {
+        'pid': int(sys.argv[8]),
+        'launcher': 'mitmdump'
+    },
+    'files': {
+        'flow': sys.argv[9],
+        'har': sys.argv[10],
+        'log': sys.argv[11],
+        'index': sys.argv[12],
+        'summary': sys.argv[13],
+        'aiJson': sys.argv[14],
+        'aiMd': sys.argv[15],
+        'navlog': sys.argv[16],
+        'stateEnv': sys.argv[17],
+        'flowSha256AtStart': sys.argv[18]
+    },
+    'rawDataPolicy': {
+        'immutable': True,
+        'description': 'Raw capture files are not modified by analysis artifacts'
+    }
 }
-EOF
+json.dump(data, sys.stdout, indent=2, ensure_ascii=False)
+" "$RUN_ID" "$TARGET_DIR" "$CAPTURES_DIR" "$STARTED_AT" "$PROGRAM_MODE" \
+  "$LISTEN_HOST" "$LISTEN_PORT" "$MITM_PID" \
+  "$FLOW_FILE" "$HAR_FILE" "$LOG_FILE" "$INDEX_FILE" "$SUMMARY_FILE" \
+  "$AI_JSON_FILE" "$AI_MD_FILE" "$NAVLOG_FILE" "$ENV_FILE" "$FLOW_SHA256" \
+  > "${MANIFEST_FILE}.tmp.$$"
+chmod 600 "${MANIFEST_FILE}.tmp.$$" 2>/dev/null || true
+mv "${MANIFEST_FILE}.tmp.$$" "$MANIFEST_FILE"
 
 echo "================================================"
 echo " mitmproxy capture started"

@@ -39,23 +39,12 @@ require_value_arg() {
     fi
 }
 
-read_kv() {
-    local key="$1"
-    local file="$2"
-    local line
-    local escaped_key
+# Cross-platform proxy management
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-    # M1 Fix: Escape regex special characters to prevent regex injection
-    escaped_key="$(printf '%s' "$key" | sed 's/[][\.*^$()+?{}|]/\\&/g')"
-    line="$(grep -E "^${escaped_key}=" "$file" | tail -n 1 || true)"
-    line="${line#*=}"
-    line="${line%$'\r'}"
-    line="${line#\"}"
-    line="${line%\"}"
-    line="${line#\'}"
-    line="${line%\'}"
-    printf '%s' "$line"
-}
+# Shared utilities
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 set_latest_link() {
     local src="$1"
@@ -68,8 +57,6 @@ set_latest_link() {
     fi
 }
 
-# Cross-platform proxy management
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=proxy_utils.sh
 source "$SCRIPT_DIR/proxy_utils.sh"
 
@@ -118,7 +105,6 @@ TARGET_DIR="$(pwd)"
 KEEP_ENV=false
 HAR_BACKEND="auto"
 DO_HAR=true
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -232,16 +218,15 @@ if [[ -z "$AI_MD_FILE" ]]; then
 fi
 
 STOP_STATUS="not-running"
-if stop_pid "$MITM_PID"; then
-    STOP_STATUS="stopped"
-else
-    case "$?" in
-        1) STOP_STATUS="not-running" ;;
-        2) STOP_STATUS="invalid-pid" ;;
-        3) STOP_STATUS="kill-failed" ;;
-        *) STOP_STATUS="unknown" ;;
-    esac
-fi
+STOP_RC=0
+stop_pid "$MITM_PID" || STOP_RC=$?
+case "$STOP_RC" in
+    0) STOP_STATUS="stopped" ;;
+    1) STOP_STATUS="not-running" ;;
+    2) STOP_STATUS="invalid-pid" ;;
+    3) STOP_STATUS="kill-failed" ;;
+    *) STOP_STATUS="unknown" ;;
+esac
 
 PROXY_STATUS="unchanged"
 if [[ "$PROGRAM_MODE" != "true" ]]; then
@@ -377,7 +362,7 @@ if [[ -n "$ALLOW_HOSTS" || -n "$DENY_HOSTS" || -n "$SCOPE_POLICY_FILE" ]]; then
                 SCOPE_AUDIT_STATUS="violation"
                 # Count violations from audit file
                 if [[ -f "$SCOPE_AUDIT_FILE" ]]; then
-                    SCOPE_AUDIT_VIOLATIONS="$(python3 -c "import json; print(json.load(open('$SCOPE_AUDIT_FILE'))['outOfScopeCount'])" 2>/dev/null || echo 0)"
+                    SCOPE_AUDIT_VIOLATIONS="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['outOfScopeCount'])" "$SCOPE_AUDIT_FILE" 2>/dev/null || echo 0)"
                 fi
             fi
         else
@@ -391,10 +376,6 @@ else
 fi
 
 STOPPED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-PROGRAM_MODE_JSON=false
-if [[ "$PROGRAM_MODE" == "true" ]]; then
-    PROGRAM_MODE_JSON=true
-fi
 
 FLOW_SHA256=""
 if [[ -n "$FLOW_FILE" && -f "$FLOW_FILE" ]] && command -v sha256sum >/dev/null 2>&1; then
@@ -403,54 +384,47 @@ fi
 
 MANIFEST_STATUS="ok"
 MANIFEST_TMP="${MANIFEST_FILE}.tmp.$$"
-if ! cat >"$MANIFEST_TMP" <<EOF
-{
-  "schemaVersion": "1",
-  "runId": "${RUN_ID}",
-  "targetDir": "${TARGET_DIR}",
-  "capturesDir": "${CAPTURES_DIR}",
-  "startedAt": "${STARTED_AT}",
-  "stoppedAt": "${STOPPED_AT}",
-  "programMode": ${PROGRAM_MODE_JSON},
-  "listen": {
-    "host": "${LISTEN_HOST}",
-    "port": "${LISTEN_PORT}"
-  },
-  "process": {
-    "pid": "${MITM_PID}",
-    "stopStatus": "${STOP_STATUS}"
-  },
-  "scope": {
-    "allowHosts": "${ALLOW_HOSTS}",
-    "denyHosts": "${DENY_HOSTS}",
-    "policyFile": "${SCOPE_POLICY_FILE}",
-    "auditStatus": "${SCOPE_AUDIT_STATUS}",
-    "auditFile": "${SCOPE_AUDIT_FILE}",
-    "violations": ${SCOPE_AUDIT_VIOLATIONS}
-  },
-  "artifacts": {
-    "flow": "${FLOW_FILE}",
-    "flowSha256": "${FLOW_SHA256}",
-    "har": "${HAR_FILE}",
-    "harStatus": "${HAR_STATUS}",
-    "harBackend": "${HAR_BACKEND_USED}",
-    "log": "${LOG_FILE}",
-    "manifest": "${MANIFEST_FILE}",
-    "index": "${INDEX_FILE}",
-    "summary": "${SUMMARY_FILE}",
-    "reportStatus": "${REPORT_STATUS}",
-    "aiJson": "${AI_JSON_FILE}",
-    "aiMd": "${AI_MD_FILE}",
-    "aiBriefStatus": "${AI_BRIEF_STATUS}",
-    "navlog": "${NAVLOG_FILE}",
-    "scopeAudit": "${SCOPE_AUDIT_FILE}"
-  },
-  "rawDataPolicy": {
-    "immutable": true,
-    "description": "Raw capture files are not modified by analysis artifacts"
-  }
+if ! python3 -c "
+import json, sys
+data = {
+    'schemaVersion': '1',
+    'runId': sys.argv[1],
+    'targetDir': sys.argv[2],
+    'capturesDir': sys.argv[3],
+    'startedAt': sys.argv[4],
+    'stoppedAt': sys.argv[5],
+    'programMode': sys.argv[6] == 'true',
+    'listen': {'host': sys.argv[7], 'port': int(sys.argv[8]) if sys.argv[8].isdigit() else sys.argv[8]},
+    'process': {'pid': int(sys.argv[9]) if sys.argv[9].isdigit() else sys.argv[9], 'stopStatus': sys.argv[10]},
+    'scope': {
+        'allowHosts': sys.argv[11],
+        'denyHosts': sys.argv[12],
+        'policyFile': sys.argv[13],
+        'auditStatus': sys.argv[14],
+        'auditFile': sys.argv[15],
+        'violations': int(sys.argv[16])
+    },
+    'artifacts': {
+        'flow': sys.argv[17], 'flowSha256': sys.argv[18],
+        'har': sys.argv[19], 'harStatus': sys.argv[20], 'harBackend': sys.argv[21],
+        'log': sys.argv[22], 'manifest': sys.argv[23],
+        'index': sys.argv[24], 'summary': sys.argv[25], 'reportStatus': sys.argv[26],
+        'aiJson': sys.argv[27], 'aiMd': sys.argv[28], 'aiBriefStatus': sys.argv[29],
+        'navlog': sys.argv[30], 'scopeAudit': sys.argv[31]
+    },
+    'rawDataPolicy': {
+        'immutable': True,
+        'description': 'Raw capture files are not modified by analysis artifacts'
+    }
 }
-EOF
+json.dump(data, sys.stdout, indent=2, ensure_ascii=False)
+" "$RUN_ID" "$TARGET_DIR" "$CAPTURES_DIR" "$STARTED_AT" "$STOPPED_AT" \
+  "$PROGRAM_MODE" "$LISTEN_HOST" "$LISTEN_PORT" "$MITM_PID" "$STOP_STATUS" \
+  "$ALLOW_HOSTS" "$DENY_HOSTS" "$SCOPE_POLICY_FILE" "$SCOPE_AUDIT_STATUS" "$SCOPE_AUDIT_FILE" "$SCOPE_AUDIT_VIOLATIONS" \
+  "$FLOW_FILE" "$FLOW_SHA256" "$HAR_FILE" "$HAR_STATUS" "$HAR_BACKEND_USED" \
+  "$LOG_FILE" "$MANIFEST_FILE" "$INDEX_FILE" "$SUMMARY_FILE" "$REPORT_STATUS" \
+  "$AI_JSON_FILE" "$AI_MD_FILE" "$AI_BRIEF_STATUS" "$NAVLOG_FILE" "$SCOPE_AUDIT_FILE" \
+  > "$MANIFEST_TMP"
 then
     MANIFEST_STATUS="failed"
 else

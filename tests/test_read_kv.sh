@@ -7,24 +7,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# Import read_kv function from capture-session.sh
-read_kv() {
-    local key="$1"
-    local file="$2"
-    local line
-    local escaped_key
-
-    # M1 Fix: Escape regex special characters to prevent regex injection
-    escaped_key="$(printf '%s' "$key" | sed 's/[][\.*^$()+?{}|]/\\&/g')"
-    line="$(grep -E "^${escaped_key}=" "$file" 2>/dev/null | tail -n 1 || true)"
-    line="${line#*=}"
-    line="${line%$'\r'}"
-    line="${line#\"}"
-    line="${line%\"}"
-    line="${line#\'}"
-    line="${line%\'}"
-    printf '%s' "$line"
-}
+# Source read_kv from common.sh (single source of truth)
+COMMON_SH="$(cd "$SCRIPT_DIR/../scripts" && pwd)/common.sh"
+if [[ ! -f "$COMMON_SH" ]]; then
+    echo "✗ Cannot find common.sh at $COMMON_SH" >&2
+    exit 1
+fi
+source "$COMMON_SH"
 
 # Test 1: Normal key lookup
 test_normal_key() {

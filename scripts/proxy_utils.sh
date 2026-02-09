@@ -229,27 +229,27 @@ restore_system_proxy_from_env() {
     fi
 
     local backend
-    backend="$(grep '^PROXY_BACKEND=' "$env_file" 2>/dev/null | tail -1 | cut -d= -f2-)"
+    backend="$(read_kv "PROXY_BACKEND" "$env_file")"
 
     case "$backend" in
         gnome)
             local mode http_host http_port https_host https_port
-            mode="$(grep '^PREV_PROXY_MODE=' "$env_file" | tail -1 | cut -d= -f2-)"
-            http_host="$(grep '^PREV_PROXY_HTTP_HOST=' "$env_file" | tail -1 | cut -d= -f2-)"
-            http_port="$(grep '^PREV_PROXY_HTTP_PORT=' "$env_file" | tail -1 | cut -d= -f2-)"
-            https_host="$(grep '^PREV_PROXY_HTTPS_HOST=' "$env_file" | tail -1 | cut -d= -f2-)"
-            https_port="$(grep '^PREV_PROXY_HTTPS_PORT=' "$env_file" | tail -1 | cut -d= -f2-)"
+            mode="$(read_kv "PREV_PROXY_MODE" "$env_file")"
+            http_host="$(read_kv "PREV_PROXY_HTTP_HOST" "$env_file")"
+            http_port="$(read_kv "PREV_PROXY_HTTP_PORT" "$env_file")"
+            https_host="$(read_kv "PREV_PROXY_HTTPS_HOST" "$env_file")"
+            https_port="$(read_kv "PREV_PROXY_HTTPS_PORT" "$env_file")"
             restore_gnome_proxy "$mode" "$http_host" "$http_port" "$https_host" "$https_port"
             ;;
         macos)
             local service http_enabled http_host http_port https_enabled https_host https_port
-            service="$(grep '^PREV_PROXY_SERVICE=' "$env_file" | tail -1 | cut -d= -f2-)"
-            http_enabled="$(grep '^PREV_PROXY_HTTP_ENABLED=' "$env_file" | tail -1 | cut -d= -f2-)"
-            http_host="$(grep '^PREV_PROXY_HTTP_HOST=' "$env_file" | tail -1 | cut -d= -f2-)"
-            http_port="$(grep '^PREV_PROXY_HTTP_PORT=' "$env_file" | tail -1 | cut -d= -f2-)"
-            https_enabled="$(grep '^PREV_PROXY_HTTPS_ENABLED=' "$env_file" | tail -1 | cut -d= -f2-)"
-            https_host="$(grep '^PREV_PROXY_HTTPS_HOST=' "$env_file" | tail -1 | cut -d= -f2-)"
-            https_port="$(grep '^PREV_PROXY_HTTPS_PORT=' "$env_file" | tail -1 | cut -d= -f2-)"
+            service="$(read_kv "PREV_PROXY_SERVICE" "$env_file")"
+            http_enabled="$(read_kv "PREV_PROXY_HTTP_ENABLED" "$env_file")"
+            http_host="$(read_kv "PREV_PROXY_HTTP_HOST" "$env_file")"
+            http_port="$(read_kv "PREV_PROXY_HTTP_PORT" "$env_file")"
+            https_enabled="$(read_kv "PREV_PROXY_HTTPS_ENABLED" "$env_file")"
+            https_host="$(read_kv "PREV_PROXY_HTTPS_HOST" "$env_file")"
+            https_port="$(read_kv "PREV_PROXY_HTTPS_PORT" "$env_file")"
             restore_macos_proxy "$service" "$http_enabled" "$http_host" "$http_port" "$https_enabled" "$https_host" "$https_port"
             ;;
         none)

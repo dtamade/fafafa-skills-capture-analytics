@@ -42,21 +42,9 @@ err() {
 }
 
 # Safe key-value reader (reuse pattern from capture-session.sh)
-read_kv() {
-    local key="$1"
-    local file="$2"
-    local escaped_key
-    escaped_key="$(printf '%s' "$key" | sed 's/[][\.*^$()+?{}|]/\\&/g')"
-    local line
-    line="$(grep -E "^${escaped_key}=" "$file" 2>/dev/null | tail -n 1 || true)"
-    line="${line#*=}"
-    line="${line%$'\r'}"
-    line="${line#\"}"
-    line="${line%\"}"
-    line="${line#\'}"
-    line="${line%\'}"
-    printf '%s' "$line"
-}
+# Shared utilities
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 # Resolve navlog file path from session state
 resolve_navlog() {
