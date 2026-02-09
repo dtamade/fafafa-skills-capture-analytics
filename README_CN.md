@@ -267,12 +267,13 @@ capture-analytics/
 
 ## 联系方式
 
-- **QQ**: 179033731
+- **QQ群**: 685403987
 - **邮箱**: dtamade@gmail.com
+- **工作室**: fafafa studio
 - **GitHub Issues**: [报告 Bug](https://github.com/dtamade/fafafa-skills-capture-analytics/issues)
 
 ---
 
 <p align="center">
-  用心制作 by <a href="https://github.com/dtamade">dtamade</a>
+  用心制作 by <a href="https://github.com/dtamade">dtamade</a> · fafafa studio
 </p>

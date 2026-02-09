@@ -267,12 +267,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-- **QQ**: 179033731
+- **QQ Group**: 685403987
 - **Email**: dtamade@gmail.com
+- **Studio**: fafafa studio
 - **GitHub Issues**: [Report a bug](https://github.com/dtamade/fafafa-skills-capture-analytics/issues)
 
 ---
 
 <p align="center">
-  Made with care by <a href="https://github.com/dtamade">dtamade</a>
+  Made with care by <a href="https://github.com/dtamade">dtamade</a> · fafafa studio
 </p>

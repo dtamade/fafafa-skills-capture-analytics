@@ -293,6 +293,7 @@ exit $FAIL
 
 - 在 [Discussions](https://github.com/dtamade/fafafa-skills-capture-analytics/discussions) 发起讨论
 - 联系维护者：dtamade@gmail.com
-- QQ：179033731
+- QQ群：685403987
+- 工作室：fafafa studio
 
 感谢你的贡献！

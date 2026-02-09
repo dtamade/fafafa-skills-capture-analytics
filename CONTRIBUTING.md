@@ -293,6 +293,7 @@ If you have questions, feel free to:
 
 - Open a [Discussion](https://github.com/dtamade/fafafa-skills-capture-analytics/discussions)
 - Contact maintainer: dtamade@gmail.com
-- QQ: 179033731
+- QQ Group: 685403987
+- Studio: fafafa studio
 
 Thank you for contributing!
