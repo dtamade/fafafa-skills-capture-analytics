@@ -10,6 +10,9 @@ read_kv() {
     local line
     local escaped_key
 
+    # Defensive: empty file path or missing file
+    [[ -z "$file" || ! -f "$file" ]] && return 0
+
     escaped_key="$(printf '%s' "$key" | sed 's/[][\.*^$()+?{}|]/\\&/g')"
     line="$(grep -E "^${escaped_key}=" "$file" 2>/dev/null | tail -n 1 || true)"
     line="${line#*=}"

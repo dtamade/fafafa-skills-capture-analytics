@@ -170,7 +170,7 @@ while [[ $# -gt 0 ]]; do
         *)
             if [[ -z "$TARGET_URL" && "$1" =~ ^https?:// ]]; then
                 TARGET_URL="$1"
-            elif [[ -z "$TARGET_URL" && "$1" =~ ^[a-zA-Z] && ! -f "$1" ]]; then
+            elif [[ -z "$TARGET_URL" && "$1" =~ ^[a-zA-Z][a-zA-Z0-9.-]*\.[a-zA-Z]{2,} && ! -f "$1" ]]; then
                 TARGET_URL="https://$1"
             else
                 EXTRA_ARGS+=("$1")

@@ -96,7 +96,7 @@ fi
 mkdir -p "$(dirname "$OUT_FILE")"
 TMP_FILE="${OUT_FILE}.tmp.$$"
 
-{
+(umask 077; {
     echo "# AI Analysis Bundle"
     echo
     echo "GeneratedAt: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -130,7 +130,7 @@ TMP_FILE="${OUT_FILE}.tmp.$$"
         cat "$SUMMARY_FILE"
         echo
     fi
-} >"$TMP_FILE"
+} >"$TMP_FILE")
 
 mv "$TMP_FILE" "$OUT_FILE"
 chmod 600 "$OUT_FILE" 2>/dev/null || true

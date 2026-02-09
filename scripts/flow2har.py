@@ -144,6 +144,13 @@ def convert(flow_file, har_file):
         print(f"Error: flow file is a symlink, refusing to open: {flow_file}", file=sys.stderr)
         sys.exit(1)
 
+    # Verify flow file does not escape its parent directory
+    real_flow = os.path.realpath(flow_file)
+    expected_dir = os.path.realpath(os.path.dirname(flow_file))
+    if expected_dir != os.sep and not real_flow.startswith(expected_dir + os.sep):
+        print(f"Error: flow file path escapes expected directory: {flow_file}", file=sys.stderr)
+        sys.exit(1)
+
     har = {
         "log": {
             "version": "1.2",

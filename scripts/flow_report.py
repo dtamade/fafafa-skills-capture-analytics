@@ -170,6 +170,13 @@ def main(argv):
         print(f"Error: flow file is a symlink, refusing to open: {flow_file}", file=sys.stderr)
         return 3
 
+    # Verify flow file does not escape its parent directory
+    real_flow = os.path.realpath(flow_file)
+    expected_dir = os.path.realpath(os.path.dirname(flow_file))
+    if expected_dir != os.sep and not real_flow.startswith(expected_dir + os.sep):
+        print(f"Error: flow file path escapes expected directory: {flow_file}", file=sys.stderr)
+        return 3
+
     MAX_ENTRIES = 100000
     entries = []
     with open(flow_file, "rb") as flow_stream:
