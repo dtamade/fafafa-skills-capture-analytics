@@ -10,6 +10,7 @@ import glob
 import re
 import json
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
@@ -213,11 +214,22 @@ def update_latest_links(captures_dir: str):
                 pass
 
 
-def delete_file(filepath: str, secure: bool, captures_dir: str = ""):
+
+def _detect_shred() -> str:
+    """Detect available shred command. Returns command name or empty string."""
+    for cmd in ("shred", "gshred"):
+        if shutil.which(cmd):
+            return cmd
+    return ""
+
+
+def delete_file(filepath: str, secure: bool, captures_dir: str = "",
+                shred_cmd: str = ""):
     """Delete a single file, optionally with shred.
 
     If captures_dir is provided, verifies the file is within that directory.
     Refuses to operate on symlinks.
+    shred_cmd should be pre-detected via _detect_shred() for efficiency.
     """
     if os.path.islink(filepath):
         try:
@@ -232,31 +244,23 @@ def delete_file(filepath: str, secure: bool, captures_dir: str = ""):
         if not real_file.startswith(real_dir + os.sep):
             return
 
-    if secure:
+    if secure and shred_cmd:
         try:
-            # Try shred first, then gshred (macOS Homebrew)
-            shred_cmd = "shred"
-            if subprocess.run(
-                ["which", "shred"], capture_output=True
-            ).returncode != 0:
-                if subprocess.run(
-                    ["which", "gshred"], capture_output=True
-                ).returncode == 0:
-                    shred_cmd = "gshred"
-                else:
-                    print(
-                        f"Warning: shred/gshred not found, falling back to rm for {filepath}",
-                        file=sys.stderr,
-                    )
-                    os.remove(filepath)
-                    return
             subprocess.run(
                 [shred_cmd, "-n", "3", "-z", "-u", filepath],
                 check=True, capture_output=True,
             )
             return
         except (subprocess.CalledProcessError, FileNotFoundError):
-            pass
+            print(
+                f"Warning: {shred_cmd} failed for {filepath}, falling back to rm",
+                file=sys.stderr,
+            )
+    elif secure and not shred_cmd:
+        print(
+            f"Warning: shred/gshred not found, falling back to rm for {filepath}",
+            file=sys.stderr,
+        )
     try:
         os.remove(filepath)
     except OSError:
@@ -347,6 +351,9 @@ def run_cleanup(captures_dir: str, keep_days=None, keep_size=None,
     needs_latest_update = False
     details = []
 
+    # Detect shred once for all files
+    shred_cmd = _detect_shred() if secure else ""
+
     for rid in sorted_ids:
         if rid not in to_delete:
             kept_count += 1
@@ -363,7 +370,7 @@ def run_cleanup(captures_dir: str, keep_days=None, keep_size=None,
 
         if not dry_run:
             for f in files:
-                delete_file(f, secure, captures_dir)
+                delete_file(f, secure, captures_dir, shred_cmd=shred_cmd)
 
         details.append({
             "run_id": rid,

@@ -187,6 +187,12 @@ case "$COMMAND" in
             exit 1
         fi
 
+        if [[ "$CONFIRM_PHRASE" != "YES_I_HAVE_AUTHORIZATION" ]]; then
+            err "Authorization required to capture network traffic."
+            err "Use: capture-session.sh start <url> --confirm YES_I_HAVE_AUTHORIZATION"
+            exit 1
+        fi
+
         # Generate default scope from target URL if not specified
         TARGET_HOST="$(python3 "$SCRIPT_DIR/policy.py" generate "$TARGET_URL" 2>/dev/null | python3 -c "import sys,json; p=json.load(sys.stdin); print(','.join(p['scope']['allow_hosts']))" 2>/dev/null || echo "")"
 

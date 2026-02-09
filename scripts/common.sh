@@ -28,6 +28,12 @@ acquire_lock() {
     local lock_path="$1"
     local fd="${2:-9}"
 
+    # Validate fd is a safe integer (prevent eval injection)
+    if ! [[ "$fd" =~ ^[0-9]+$ ]] || (( fd < 3 || fd > 255 )); then
+        echo "acquire_lock: invalid fd: $fd" >&2
+        return 1
+    fi
+
     _detect_lock_backend
 
     if [[ "$_COMMON_LOCK_BACKEND" == "flock" ]]; then
@@ -66,6 +72,10 @@ acquire_lock() {
 release_lock() {
     local lock_path="$1"
     local fd="${2:-9}"
+
+    if ! [[ "$fd" =~ ^[0-9]+$ ]]; then
+        return 0
+    fi
 
     _detect_lock_backend
 
@@ -115,9 +125,11 @@ read_kv() {
     line="$(grep -E "^${escaped_key}=" "$file" 2>/dev/null | tail -n 1 || true)"
     line="${line#*=}"
     line="${line%$'\r'}"
-    line="${line#\"}"
-    line="${line%\"}"
-    line="${line#\'}"
-    line="${line%\'}"
+    # Only strip quotes if they appear symmetrically (both ends match)
+    if [[ "${line:0:1}" == '"' && "${line: -1}" == '"' ]]; then
+        line="${line:1:-1}"
+    elif [[ "${line:0:1}" == "'" && "${line: -1}" == "'" ]]; then
+        line="${line:1:-1}"
+    fi
     printf '%s' "$line"
 }
