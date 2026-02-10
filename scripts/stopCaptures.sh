@@ -469,6 +469,7 @@ LATEST_SUMMARY_LINK="$CAPTURES_DIR/latest.summary.md"
 LATEST_AI_JSON_LINK="$CAPTURES_DIR/latest.ai.json"
 LATEST_AI_MD_LINK="$CAPTURES_DIR/latest.ai.md"
 LATEST_NAVLOG_LINK="$CAPTURES_DIR/latest.navigation.ndjson"
+LATEST_SCOPE_AUDIT_LINK="$CAPTURES_DIR/latest.scope_audit.json"
 
 set_latest_link "$FLOW_FILE" "$LATEST_FLOW_LINK"
 set_latest_link "$HAR_FILE" "$LATEST_HAR_LINK"
@@ -479,6 +480,7 @@ set_latest_link "$SUMMARY_FILE" "$LATEST_SUMMARY_LINK"
 set_latest_link "$AI_JSON_FILE" "$LATEST_AI_JSON_LINK"
 set_latest_link "$AI_MD_FILE" "$LATEST_AI_MD_LINK"
 set_latest_link "$NAVLOG_FILE" "$LATEST_NAVLOG_LINK"
+set_latest_link "$SCOPE_AUDIT_FILE" "$LATEST_SCOPE_AUDIT_LINK"
 
 if [[ "$KEEP_ENV" != "true" ]]; then
     rm -f "$ENV_FILE"
@@ -511,6 +513,7 @@ echo " Manifest:       $MANIFEST_STATUS"
 echo " Latest flow:    $LATEST_FLOW_LINK"
 echo " Latest summary: $LATEST_SUMMARY_LINK"
 echo " Latest AI brief:$LATEST_AI_MD_LINK"
+echo " Latest scope:   $LATEST_SCOPE_AUDIT_LINK"
 if [[ -n "$LOG_FILE" ]]; then
     echo " Log file:       $LOG_FILE"
 fi
