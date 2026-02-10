@@ -16,7 +16,7 @@
         "mitmdump",
         "HAR文件",
         "HAR分析",
-        "HAR 文件",
+        "har file",
         "请求重放",
         "流量对比",
         "网络调试",
@@ -25,18 +25,19 @@
         "capture traffic",
         "network capture",
         "request capture",
-        "network requests",
         "replay request",
-        "compare requests",
+        "compare captures",
         "debug network",
         "slow requests",
         "error requests",
         "API discovery",
-        "endpoint mapping",
+        "api endpoint discovery",
         "latency analysis",
+        "analyze website requests",
         "websocket抓包",
         "ws流量",
         "websocket capture",
+        "debug websocket",
         "ws traffic",
         "tls分析",
         "ssl分析"
@@ -47,11 +48,14 @@
         "帮我(抓一下|捕获|分析).*?(网络|请求|流量)",
         "(capture|intercept|sniff).*?(traffic|requests|network|HTTP|API)",
         "(traffic|requests|network).*?(capture|analysis|intercept)",
-        "mitmproxy|mitmdump|HAR.*?(分析|转换|file)",
-        "(重放|replay|对比|compare|diff).*?(请求|request)",
+        "(analy[sz]e|analysis|debug).*?(network|traffic|requests|API)",
+        "(分析|调试|排查).*?(网络|流量|请求|接口|API)",
+        "(mitmproxy|mitmdump)",
+        "\\bHAR\\b\\s*(分析|转换|file|export|文件)",
+        "(重放|replay|对比|compare|diff).*?(请求|request|capture)",
         "(slow|error|failed|timeout).*?(request|response|API).*?(debug|分析|查看)",
         "(请求|响应|接口).*?(慢|超时|错误|失败).*?(分析|调试|排查)",
-        "(websocket|ws).*?(流量|消息|分析|capture)",
+        "(websocket|\\bws\\b).*?(流量|消息|分析|capture|debug|调试)",
         "(tls|ssl|https).*?(握手|handshake|分析)"
       ]
     },
@@ -63,7 +67,9 @@
         "**/captures/*.ai.md",
         "**/captures/*.summary.md",
         "**/captures/*.index.ndjson",
-        "**/captures/*.manifest.json"
+        "**/captures/*.manifest.json",
+        "**/captures/*.scope_audit.json",
+        "**/captures/*.navigation.ndjson"
       ]
     }
   }

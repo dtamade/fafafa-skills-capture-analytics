@@ -1,8 +1,9 @@
 ---
 name: capture-analytics
 description: >
-  AI-driven network traffic capture and analysis. Automates mitmproxy + Playwright
-  for HTTP/HTTPS/WebSocket inspection. Supports performance, debugging, and API analysis.
+  AI-driven network traffic capture and analysis using mitmproxy/mitmdump + Playwright.
+  Triggers on 抓包/流量捕获/网络抓包, HAR 文件分析, websocket/ws 流量, TLS/SSL 分析,
+  request replay/流量对比, and API discovery or network debugging requests.
 ---
 
 # Capture Analytics

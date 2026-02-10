@@ -39,9 +39,11 @@ def test_should_trigger():
         '网络调试一下这个接口',
         # English
         'capture traffic from this website',
+        'please analyze this website requests',
         'analyze network requests',
         'use mitmproxy to intercept HTTP',
         'debug network timeout issue',
+        'debug websocket reconnect issue',
         'replay this API request',
         # WebSocket (newly added)
         'websocket 抓包分析',
@@ -86,6 +88,10 @@ def test_should_not_trigger():
         '帮我写文档',
         '代码审查',
         'git 提交',
+        'How to mock network requests in Jest tests?',
+        'Need endpoint mapping for OpenAPI spec',
+        'share file with me',
+        'news 分析 报告',
     ]
 
     passed = 0
@@ -111,9 +117,11 @@ def test_edge_cases():
         # Should trigger (specific enough)
         ('帮我分析接口超时问题，看看请求链路', True),
         ('debug network error on login', True),
+        ('please analyze this website requests', True),
         # Should not trigger (too generic)
         ('帮我做网站安全分析报告', False),  # No capture/network context
         ('分析前端性能', False),  # Could be rendering, not network
+        ('Need endpoint mapping for OpenAPI spec', False),
     ]
 
     passed = 0
@@ -133,6 +141,31 @@ def test_edge_cases():
     assert failed == 0, f"{failed} edge case(s) failed"
 
 
+def test_file_trigger_patterns_include_current_outputs():
+    """Ensure file trigger patterns cover generated capture artifacts."""
+    rules = load_rules()
+    patterns = rules['capture-analytics']['fileTriggers']['pathPatterns']
+
+    required_suffixes = [
+        '.flow',
+        '.har',
+        '.ai.json',
+        '.ai.md',
+        '.summary.md',
+        '.index.ndjson',
+        '.manifest.json',
+        '.scope_audit.json',
+        '.navigation.ndjson',
+    ]
+
+    missing = []
+    for suffix in required_suffixes:
+        if not any(suffix in p for p in patterns):
+            missing.append(suffix)
+
+    assert not missing, f"Missing file trigger patterns for: {missing}"
+
+
 def run_all_tests():
     """Run all trigger rule tests (standalone runner)."""
     print('Running trigger rule tests...\n')
@@ -150,6 +183,11 @@ def run_all_tests():
         failed = True
     try:
         test_edge_cases()
+    except AssertionError as e:
+        print(f'✗ {e}')
+        failed = True
+    try:
+        test_file_trigger_patterns_include_current_outputs()
     except AssertionError as e:
         print(f'✗ {e}')
         failed = True

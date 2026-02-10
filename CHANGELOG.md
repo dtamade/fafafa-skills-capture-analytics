@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Smart input collection - AI extracts URLs and goals from natural language
-- URL validation with reachability check (`capture-session.sh validate`)
+- Capture progress command with live request/size/duration stats (`capture-session.sh progress`)
 - Pre-flight checklist for AI to confirm required information
 - Comprehensive security guidelines documentation
 

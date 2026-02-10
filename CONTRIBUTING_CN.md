@@ -105,7 +105,7 @@ python3 -m pytest tests/ -v
 for test in tests/test_*.sh; do bash "$test"; done
 
 # 运行特定测试文件
-python3 -m pytest tests/test_sanitize.py -v
+python3 -m pytest tests/test_rules.py -v
 ```
 
 ## 代码规范
@@ -232,9 +232,9 @@ Fixes #57
 
 ```
 tests/
-├── test_sanitize.py        # sanitize.py 的单元测试
-├── test_flow_report.py     # flow_report.py 的单元测试
-├── test_capture.sh         # capture 脚本的集成测试
+├── test_rules.py           # 技能触发规则测试
+├── test_policy.py          # 范围策略解析/匹配测试
+├── test_progress.sh        # capture-session progress 回归测试
 └── ...
 ```
 
@@ -244,18 +244,10 @@ Python 测试使用 pytest：
 
 ```python
 import pytest
-from scripts.sanitize import sanitize_headers
+from scripts.policy import extract_target_host
 
-class TestSanitizeHeaders:
-    def test_removes_authorization(self):
-        headers = {"Authorization": "Bearer secret123"}
-        result = sanitize_headers(headers)
-        assert "Authorization" not in result or result["Authorization"] == "[REDACTED]"
-
-    def test_preserves_safe_headers(self):
-        headers = {"Content-Type": "application/json"}
-        result = sanitize_headers(headers)
-        assert result["Content-Type"] == "application/json"
+def test_extract_target_host():
+    assert extract_target_host("https://example.com/path") == "example.com"
 ```
 
 Shell 测试遵循以下模式：
@@ -264,24 +256,24 @@ Shell 测试遵循以下模式：
 #!/usr/bin/env bash
 set -euo pipefail
 
-# test_capture.sh - capture-session.sh 的集成测试
+# test_progress.sh - capture-session.sh progress 回归测试
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0
 FAIL=0
 
-test_validate_url() {
-    if "$SCRIPT_DIR/scripts/capture-session.sh" validate "https://example.com" >/dev/null 2>&1; then
-        echo "PASS: validate 接受有效 URL"
+test_progress_output() {
+    if "$SCRIPT_DIR/scripts/capture-session.sh" progress -d /tmp >/dev/null 2>&1; then
+        echo "PASS: progress 命令执行成功"
         ((PASS++))
     else
-        echo "FAIL: validate 拒绝了有效 URL"
+        echo "FAIL: progress 命令执行失败"
         ((FAIL++))
     fi
 }
 
 # 运行测试
-test_validate_url
+test_progress_output
 
 echo "结果: $PASS 通过, $FAIL 失败"
 exit $FAIL

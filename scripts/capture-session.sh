@@ -285,7 +285,7 @@ case "$COMMAND" in
 
         # Calculate duration
         if [[ -n "$STARTED_AT" ]]; then
-            START_EPOCH=$(date -d "$STARTED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%d %H:%M:%S" "$STARTED_AT" +%s 2>/dev/null || echo "0")
+            START_EPOCH=$(date -d "$STARTED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$STARTED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%d %H:%M:%S" "$STARTED_AT" +%s 2>/dev/null || echo "0")
             NOW_EPOCH=$(date +%s)
             DURATION_SEC=$((NOW_EPOCH - START_EPOCH))
             DURATION_MIN=$((DURATION_SEC / 60))

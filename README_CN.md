@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/dtamade/fafafa-skills-capture-analytics/main/assets/logo.png" alt="Capture Analytics Logo" width="120" height="120">
-</p>
-
 <h1 align="center">Capture Analytics</h1>
 
 <p align="center">
@@ -224,7 +220,7 @@ capture-analytics/
 │   └── ...                     # 分析工具
 ├── references/                 # 详细文档
 ├── templates/                  # 报告模板
-└── tests/                      # 测试套件
+└── tests/                      # 测试套件（详见 tests/）
 ```
 
 ## 贡献

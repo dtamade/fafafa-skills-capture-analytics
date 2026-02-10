@@ -105,7 +105,7 @@ python3 -m pytest tests/ -v
 for test in tests/test_*.sh; do bash "$test"; done
 
 # Run specific test file
-python3 -m pytest tests/test_sanitize.py -v
+python3 -m pytest tests/test_rules.py -v
 ```
 
 ## Coding Standards
@@ -232,9 +232,9 @@ Fixes #57
 
 ```
 tests/
-├── test_sanitize.py        # Unit tests for sanitize.py
-├── test_flow_report.py     # Unit tests for flow_report.py
-├── test_capture.sh         # Integration tests for capture scripts
+├── test_rules.py           # Skill trigger rule tests
+├── test_policy.py          # Scope policy parsing/matching tests
+├── test_progress.sh        # capture-session progress regression test
 └── ...
 ```
 
@@ -244,18 +244,10 @@ Python tests use pytest:
 
 ```python
 import pytest
-from scripts.sanitize import sanitize_headers
+from scripts.policy import extract_target_host
 
-class TestSanitizeHeaders:
-    def test_removes_authorization(self):
-        headers = {"Authorization": "Bearer secret123"}
-        result = sanitize_headers(headers)
-        assert "Authorization" not in result or result["Authorization"] == "[REDACTED]"
-
-    def test_preserves_safe_headers(self):
-        headers = {"Content-Type": "application/json"}
-        result = sanitize_headers(headers)
-        assert result["Content-Type"] == "application/json"
+def test_extract_target_host():
+    assert extract_target_host("https://example.com/path") == "example.com"
 ```
 
 Shell tests follow this pattern:
@@ -264,24 +256,24 @@ Shell tests follow this pattern:
 #!/usr/bin/env bash
 set -euo pipefail
 
-# test_capture.sh - Integration tests for capture-session.sh
+# test_progress.sh - Regression tests for capture-session.sh progress
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0
 FAIL=0
 
-test_validate_url() {
-    if "$SCRIPT_DIR/scripts/capture-session.sh" validate "https://example.com" >/dev/null 2>&1; then
-        echo "PASS: validate accepts valid URL"
+test_progress_output() {
+    if "$SCRIPT_DIR/scripts/capture-session.sh" progress -d /tmp >/dev/null 2>&1; then
+        echo "PASS: progress command ran"
         ((PASS++))
     else
-        echo "FAIL: validate rejects valid URL"
+        echo "FAIL: progress command failed"
         ((FAIL++))
     fi
 }
 
 # Run tests
-test_validate_url
+test_progress_output
 
 echo "Results: $PASS passed, $FAIL failed"
 exit $FAIL
