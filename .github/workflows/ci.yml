@@ -84,3 +84,30 @@ jobs:
 
       - name: Run git-doctor smoke
         run: ./scripts/git-doctor.sh --json --timeout 10
+
+  ci-summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - lint
+      - tests
+      - release-check
+    if: ${{ always() }}
+
+    steps:
+      - name: Summarize required job results
+        run: |
+          echo "lint result: ${{ needs.lint.result }}"
+          echo "tests result: ${{ needs.tests.result }}"
+          echo "release-check result: ${{ needs.release-check.result }}"
+
+      - name: Enforce all required jobs succeeded
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ]] || \
+             [[ "${{ needs.tests.result }}" != "success" ]] || \
+             [[ "${{ needs.release-check.result }}" != "success" ]]; then
+            echo "One or more required jobs failed."
+            exit 1
+          fi
+
+          echo "All required jobs passed."
