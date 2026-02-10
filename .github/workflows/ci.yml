@@ -10,7 +10,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Lint shell syntax
+        run: |
+          bash -n install.sh
+          for file in scripts/*.sh tests/*.sh; do
+            bash -n "$file"
+          done
+
+      - name: Lint python syntax
+        run: python -m compileall -q scripts tests
+
+  tests:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -28,18 +51,36 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pytest
 
-      - name: Lint shell syntax
+      - name: Run Python tests
+        run: python -m pytest tests/ -q
+
+      - name: Run shell tests
         run: |
-          bash -n install.sh
-          for file in scripts/*.sh tests/*.sh; do
-            bash -n "$file"
+          for test in tests/test_*.sh; do
+            echo "[RUN] $test"
+            bash "$test"
           done
 
-      - name: Lint python syntax
-        run: python -m compileall -q scripts tests
+  release-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
-      - name: Release readiness check
-        run: ./scripts/release-check.sh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+
+      - name: Run release-check gates
+        run: ./scripts/release-check.sh --skip-python-tests --skip-shell-tests
 
       - name: Run git-doctor smoke
         run: ./scripts/git-doctor.sh --json --timeout 10
