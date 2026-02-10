@@ -64,3 +64,9 @@ def test_changelog_does_not_reference_removed_validate_command() -> None:
     assert "capture-session.sh validate" not in changelog
     assert "capture-session.sh progress" in changelog
 
+
+def test_release_checklist_uses_release_check_script() -> None:
+    checklist = _read("docs/release-checklist.md")
+
+    assert "./scripts/release-check.sh" in checklist
+    assert "./scripts/release-check.sh --dry-run" in checklist

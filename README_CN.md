@@ -215,6 +215,7 @@ capture-analytics/
 ├── requirements.txt            # Python 依赖
 ├── scripts/                    # Shell 和 Python 脚本
 │   ├── capture-session.sh      # 统一入口
+│   ├── release-check.sh        # 一键发布就绪检查
 │   ├── startCaptures.sh        # 启动 mitmproxy
 │   ├── stopCaptures.sh         # 停止并处理流水线
 │   └── ...                     # 分析工具

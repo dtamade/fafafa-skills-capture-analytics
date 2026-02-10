@@ -18,17 +18,24 @@ git status --short --branch
 Run:
 
 ```bash
-./install.sh --check
-pytest -q
-for test in tests/*.sh; do bash "$test"; done
-./scripts/capture-session.sh doctor
+./scripts/release-check.sh
 ```
 
 Expected outcome:
 
-- `pytest` passes.
-- All shell tests pass.
-- `doctor` reports no failures.
+- All quality gates pass in one run.
+
+Optional (preview only):
+
+```bash
+./scripts/release-check.sh --dry-run
+```
+
+Optional (partial checks):
+
+```bash
+./scripts/release-check.sh --skip-shell-tests --skip-doctor
+```
 
 ## 3) Run a functional smoke test
 

@@ -215,6 +215,7 @@ capture-analytics/
 ├── requirements.txt            # Python dependencies
 ├── scripts/                    # Shell & Python scripts
 │   ├── capture-session.sh      # Unified entry point
+│   ├── release-check.sh        # One-command release readiness check
 │   ├── startCaptures.sh        # Start mitmproxy
 │   ├── stopCaptures.sh         # Stop & process pipeline
 │   └── ...                     # Analysis utilities
