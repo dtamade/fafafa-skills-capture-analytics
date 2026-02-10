@@ -38,18 +38,8 @@ jobs:
       - name: Lint python syntax
         run: python -m compileall -q scripts tests
 
-      - name: Install check
-        run: ./install.sh --check
-
-      - name: Run Python tests
-        run: pytest -q
-
-      - name: Run shell tests
-        run: |
-          for test in tests/*.sh; do
-            echo "[RUN] $test"
-            bash "$test"
-          done
+      - name: Release readiness check
+        run: ./scripts/release-check.sh
 
       - name: Run git-doctor smoke
         run: ./scripts/git-doctor.sh --json --timeout 10
