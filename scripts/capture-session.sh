@@ -276,6 +276,7 @@ case "$COMMAND" in
         MITM_PID="$(read_kv "MITM_PID" "$ENV_FILE")"
         STARTED_AT="$(read_kv "STARTED_AT" "$ENV_FILE")"
         LISTEN_PORT="$(read_kv "LISTEN_PORT" "$ENV_FILE")"
+        FLOW_FILE="$(read_kv "FLOW_FILE" "$ENV_FILE")"
 
         if [[ ! "$MITM_PID" =~ ^[0-9]+$ ]] || ! kill -0 "$MITM_PID" 2>/dev/null; then
             err "Capture not running (stale state)"
@@ -295,7 +296,9 @@ case "$COMMAND" in
         fi
 
         # Find current flow file and get size
-        FLOW_FILE="$WORK_DIR/captures/capture.flow"
+        if [[ -z "$FLOW_FILE" ]]; then
+            FLOW_FILE="$WORK_DIR/captures/capture.flow"
+        fi
         if [[ -f "$FLOW_FILE" ]]; then
             FLOW_SIZE=$(du -h "$FLOW_FILE" 2>/dev/null | cut -f1 || echo "0")
             # Count requests by parsing flow file (rough estimate)

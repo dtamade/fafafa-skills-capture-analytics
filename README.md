@@ -135,8 +135,8 @@ The skill intelligently extracts information from your request:
 | You Say | AI Understands |
 |---------|----------------|
 | "Analyze example.com performance" | URL=example.com, Goal=performance |
-| "抓包 localhost:3000" | URL=http://localhost:3000 |
-| "分析 192.168.1.1 的请求" | URL=http://192.168.1.1 |
+| "抓包 localhost:3000" | URL=https://localhost:3000 |
+| "分析 192.168.1.1 的请求" | URL=https://192.168.1.1 |
 
 ### Manual Mode
 

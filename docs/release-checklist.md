@@ -35,9 +35,9 @@ Expected outcome:
 Run:
 
 ```bash
-./scripts/capture-session.sh validate https://example.com
-./scripts/capture-session.sh start https://example.com --confirm YES_I_HAVE_AUTHORIZATION
+./scripts/capture-session.sh start https://example.com
 ./scripts/capture-session.sh status
+./scripts/capture-session.sh progress
 ./scripts/capture-session.sh stop
 ./scripts/capture-session.sh analyze
 ```

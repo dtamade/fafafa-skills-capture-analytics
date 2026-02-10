@@ -135,8 +135,8 @@ Claude 会：
 | 你说 | AI 理解 |
 |------|---------|
 | "分析 example.com 的性能" | URL=example.com, 目标=性能分析 |
-| "抓包 localhost:3000" | URL=http://localhost:3000 |
-| "看看 192.168.1.1 的请求" | URL=http://192.168.1.1 |
+| "抓包 localhost:3000" | URL=https://localhost:3000 |
+| "看看 192.168.1.1 的请求" | URL=https://192.168.1.1 |
 
 ### 手动模式
 
