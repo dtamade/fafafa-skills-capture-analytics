@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # startCaptures.sh - Start mitmproxy capture in current directory
-# INTERNAL: This script should be called via capture-session.sh, not directly.
-#           Direct invocation bypasses authorization checks.
 
 set -euo pipefail
 
@@ -43,17 +41,6 @@ EOF
 # Shared utilities (err, warn, require_value_arg, require_cmd, etc.)
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
-
-# P1-2 Fix: Authorization bypass protection
-# This script should only be called via capture-session.sh which enforces --confirm
-# Direct invocation is blocked unless _CAPTURE_AUTHORIZED is set
-if [[ "${_CAPTURE_AUTHORIZED:-}" != "YES" ]]; then
-    echo "[!] Direct invocation of startCaptures.sh is not allowed." >&2
-    echo "    Use: capture-session.sh start <url> --confirm YES_I_HAVE_AUTHORIZATION" >&2
-    echo "" >&2
-    echo "    This ensures proper authorization verification before capturing traffic." >&2
-    exit 1
-fi
 
 port_in_use() {
     local port="$1"

@@ -1,84 +1,29 @@
 ---
 name: capture-analytics
 description: >
-  Autonomous network traffic capture and analysis skill. Lets AI self-drive
-  mitmproxy + Playwright to capture, explore, and analyze HTTP/HTTPS/WebSocket
-  traffic from any target URL. Triggers on keywords: capture, traffic analysis,
-  packet capture, mitmproxy, HTTP analysis, request analysis, network analysis,
-  performance analysis, security analysis, HAR, replay, compare requests,
-  website analysis, API analysis, debug network, slow requests, error requests.
-  Chinese triggers: 抓包, 流量分析, 网络分析, 请求分析, 协议分析, 性能分析,
-  安全分析, 网站分析, 接口分析, 请求重放, 流量对比, 网络调试.
+  AI-driven network traffic capture and analysis. Automates mitmproxy + Playwright
+  for HTTP/HTTPS/WebSocket inspection. Supports performance, debugging, and API analysis.
 ---
 
 # Capture Analytics
 
 > AI-driven autonomous network traffic capture and deep analysis.
 
-## ⚠️ CRITICAL: Pre-flight Checklist
+## Smart URL Extraction
 
-**STOP. Before executing ANY capture command, AI MUST confirm these items:**
+AI 会自动从用户消息中提取 URL：
+- "帮我分析 example.com" → URL = https://example.com
+- "抓包 http://localhost:3000" → URL = http://localhost:3000
+- "看看 192.168.1.1 的请求" → URL = http://192.168.1.1
 
-| Required Info | How to Get It | Default If Missing |
-|---------------|---------------|-------------------|
-| **Target URL** | Extract from user message or ask | ❌ **MUST HAVE** - never guess |
-| **Analysis Goal** | Extract from context or ask | `general` |
-| **Authorization** | User must confirm permission | ❌ **MUST CONFIRM** |
-
-### Smart Information Extraction
-
-**Before asking questions, AI MUST scan the conversation for existing answers:**
-
-```
-Step 1: Extract URL from user message
-  - Look for: http://, https://, or domain patterns (example.com)
-  - Look for: "分析 X", "抓包 X", "看看 X 的请求"
-  - Example: "帮我分析 example.com 的性能" → URL = https://example.com
-
-Step 2: Infer analysis goal from context
-  - Keywords → Goal mapping:
-    性能/慢/延迟/加载     → performance
-    安全/漏洞/头部/HTTPS  → security
-    调试/错误/失败/500    → debugging
-    API/接口/端点/请求    → api-discovery
-    (none of above)       → general
-
-Step 3: Check authorization
-  - If user says: "我有权限" / "是我的网站" / "授权了" → confirmed
-  - Otherwise: MUST ask for confirmation
-```
-
-**Only ask for MISSING information:**
-
-| User Says | AI Response |
-|-----------|-------------|
-| "帮我抓包" | "好的，请告诉我：1) 目标 URL 2) 你是否有权限？" |
-| "分析 https://example.com" | "好的，分析 example.com。你有权限对该网站进行流量捕获吗？" |
-| "帮我分析 example.com 的性能，这是我的网站" | ✅ 信息完整，直接执行（URL + goal + auth 都有） |
-| "看看 mysite.com 为什么这么慢，我有权限" | ✅ 信息完整（URL=mysite.com, goal=performance, auth=confirmed） |
-
-### Validation Before Capture
-
-**AI MUST validate URL before starting capture:**
-
-```bash
-# Step 1: Validate URL format
-capture-session.sh validate "https://example.com"
-# Returns: {"valid": true, "domain": "example.com", ...}
-
-# Step 2: (Optional) Check reachability
-capture-session.sh validate "https://example.com" --check-reachable
-# Returns: {"valid": true, "reachable": true, ...}
-
-# Step 3: Start capture only after validation passes
-capture-session.sh start "https://example.com" --confirm YES_I_HAVE_AUTHORIZATION
-```
-
-### NEVER:
-- Guess or assume a URL that user didn't provide
-- Start capture without explicit authorization confirmation
-- Skip URL validation step
-- Ask questions when information is already provided in the conversation
+**Analysis Goal Inference:**
+| Keywords | Goal |
+|----------|------|
+| 性能/慢/延迟/加载 | performance |
+| 安全/漏洞/头部/HTTPS | security |
+| 调试/错误/失败/500 | debugging |
+| API/接口/端点/请求 | api-discovery |
+| (none of above) | general |
 
 ---
 
@@ -113,7 +58,7 @@ python3 -c "from mitmproxy import io; print('OK')"
 Understand the user's goal before touching anything.
 
 **AI Actions:**
-1. Clarify target URL(s) and scope
+1. Extract target URL from user message
 2. Determine analysis focus (performance / security / debugging / general)
 3. Choose exploration strategy (see [BROWSER_EXPLORATION.md](references/BROWSER_EXPLORATION.md))
 4. Check prerequisites (mitmproxy installed? Playwright available?)
@@ -132,25 +77,22 @@ Understand the user's goal before touching anything.
 
 **AI executes:**
 ```bash
-SKILL_DIR="$(dirname "$(readlink -f "$0")")"  # or known install path
-"${SKILL_DIR}/scripts/capture-session.sh" start https://example.com -d "${WORKDIR}"
+capture-session.sh start https://example.com
 ```
 
 Or with explicit scope control:
 ```bash
-"${SKILL_DIR}/scripts/startCaptures.sh" --program -d "${WORKDIR}" \
-    --allow-hosts "example.com,*.example.com"
+capture-session.sh start https://example.com --allow-hosts "example.com,*.example.com"
 ```
 
 Key flags:
-- `--program` — proxy mode only, does NOT modify system proxy
 - `-d <dir>` — output directory for capture files
 - `-P <port>` — custom port (default 18080)
 - `--allow-hosts <list>` — restrict capture to these hosts (comma-separated, supports *)
 - `--deny-hosts <list>` — always ignore these hosts (takes precedence)
 - `--policy <file>` — JSON policy file for complex scope rules
 
-**Scope Control (Security):**
+**Scope Control:**
 By default, capture-session.sh auto-generates a scope from the target URL domain.
 This prevents capturing traffic from unrelated domains (e.g., analytics, auth providers).
 
@@ -189,7 +131,7 @@ the system proxy or browser proxy is configured to route through mitmproxy.
 
 **AI executes:**
 ```bash
-"${SKILL_DIR}/scripts/stopCaptures.sh" -d "${WORKDIR}"
+capture-session.sh stop
 ```
 
 This triggers the full data pipeline:
@@ -272,6 +214,12 @@ User: "分析 captures/ 目录下的抓包数据"
 User: "对比这两次抓包的差异"
 → AI reads two sets of data, generates comparison report
 
+### Check Progress
+```bash
+capture-session.sh progress
+```
+Shows: duration, request count, data size
+
 ## Report Template
 
 See [templates/analysis-report.md](templates/analysis-report.md) for the output format.
@@ -284,17 +232,6 @@ Reports include:
 - Detailed request analysis (top issues)
 - Recommendations
 
-## Security Boundaries
-
-See [SECURITY_GUIDELINES.md](references/SECURITY_GUIDELINES.md).
-
-**Critical Rules:**
-- ONLY capture traffic from URLs the user explicitly authorizes
-- NEVER capture credentials or replay authenticated requests without consent
-- NEVER use capture data to attack or exploit targets
-- ALWAYS inform the user what will be captured before starting
-- Sanitize sensitive data (tokens, passwords) in reports
-
 ## File Structure
 
 ```
@@ -304,8 +241,7 @@ fafafa-skills-capture-analytics/
 ├── references/
 │   ├── CAPTURE_OPERATIONS.md          # Detailed capture operations
 │   ├── ANALYSIS_PATTERNS.md           # Analysis strategies & patterns
-│   ├── BROWSER_EXPLORATION.md         # Playwright exploration guide
-│   └── SECURITY_GUIDELINES.md         # Security & compliance
+│   └── BROWSER_EXPLORATION.md         # Playwright exploration guide
 ├── scripts/
 │   ├── startCaptures.sh               # Start mitmproxy capture
 │   ├── stopCaptures.sh                # Stop capture & process pipeline

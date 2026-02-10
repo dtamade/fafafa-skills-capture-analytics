@@ -7,20 +7,6 @@ import os
 from collections import Counter
 from datetime import datetime, timezone
 
-# Import sanitization module
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-try:
-    from sanitize import sanitize_index_entry
-    SANITIZE_ENABLED = True
-except ImportError:
-    SANITIZE_ENABLED = False
-    # Will be checked in main() - fail-closed unless --allow-no-sanitize
-
-# Check for --allow-no-sanitize flag (must be before other args)
-ALLOW_NO_SANITIZE = '--allow-no-sanitize' in sys.argv
-if ALLOW_NO_SANITIZE:
-    sys.argv.remove('--allow-no-sanitize')
-
 
 def iso_utc(timestamp):
     if timestamp is None:
@@ -156,17 +142,8 @@ def write_summary(flow_file, summary_file, entries):
 
 def main(argv):
     if len(argv) != 4:
-        print(f"Usage: {argv[0]} [--allow-no-sanitize] <flow_file> <index_ndjson_file> <summary_md_file>")
+        print(f"Usage: {argv[0]} <flow_file> <index_ndjson_file> <summary_md_file>")
         return 1
-
-    # P1-1 Fix: Fail-closed if sanitization is unavailable
-    if not SANITIZE_ENABLED and not ALLOW_NO_SANITIZE:
-        print("Error: sanitize module not found. Sensitive data would be exposed.", file=sys.stderr)
-        print("Use --allow-no-sanitize to proceed anyway (NOT RECOMMENDED).", file=sys.stderr)
-        return 4
-
-    if not SANITIZE_ENABLED and ALLOW_NO_SANITIZE:
-        print("WARNING: Proceeding without sanitization - sensitive data will be exposed!", file=sys.stderr)
 
     flow_file = argv[1]
     index_file = argv[2]
@@ -197,9 +174,6 @@ def main(argv):
         reader = FlowReader(flow_stream)
         for index_id, flow in enumerate(reader.stream(), start=1):
             entry = flow_to_index_entry(index_id, flow)
-            # Apply sanitization to remove sensitive data
-            if SANITIZE_ENABLED:
-                entry = sanitize_index_entry(entry)
             entries.append(entry)
             if len(entries) >= MAX_ENTRIES:
                 print(f"Warning: truncated at {MAX_ENTRIES} entries", file=sys.stderr)

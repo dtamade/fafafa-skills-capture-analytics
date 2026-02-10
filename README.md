@@ -21,7 +21,6 @@
   <a href="#installation">Installation</a> |
   <a href="#usage">Usage</a> |
   <a href="docs/release-checklist.md">Release Checklist</a> |
-  <a href="#security">Security</a> |
   <a href="README_CN.md">中文文档</a>
 </p>
 
@@ -44,10 +43,9 @@ Capture Analytics is a Claude Code skill that empowers AI to **autonomously** ca
 - **Smart Browser Automation** - Playwright-powered website exploration
 - **Intelligent Input Collection** - Extracts URLs and goals from natural language
 - **Multi-format Output** - HAR, NDJSON index, AI-friendly briefs
-- **Security First** - Authorization confirmation, data sanitization, scope control
+- **Scope Control** - Restrict capture to specific hosts
 - **Cross-platform** - Linux (GNOME), macOS, and manual proxy mode
 - **Comprehensive Analysis** - Performance, security, debugging, and API discovery
-- **120 Test Cases** - Robust test coverage (79 Python + 41 Shell)
 
 ## Quick Start
 
@@ -124,12 +122,11 @@ Simply tell Claude Code what you want to analyze:
 ```
 
 Claude will:
-1. Ask for authorization confirmation (security check)
-2. Start mitmproxy capture
-3. Open browser via Playwright
-4. Navigate and explore the site
-5. Stop capture and process data
-6. Present analysis findings
+1. Start mitmproxy capture
+2. Open browser via Playwright
+3. Navigate and explore the site
+4. Stop capture and process data
+5. Present analysis findings
 
 ### Smart Input Collection
 
@@ -138,15 +135,14 @@ The skill intelligently extracts information from your request:
 | You Say | AI Understands |
 |---------|----------------|
 | "Analyze example.com performance" | URL=example.com, Goal=performance |
-| "Check mysite.com, I have permission" | URL=mysite.com, Auth=confirmed |
-| "Start capture" | AI asks for URL and authorization |
+| "抓包 localhost:3000" | URL=http://localhost:3000 |
+| "分析 192.168.1.1 的请求" | URL=http://192.168.1.1 |
 
 ### Manual Mode
 
 ```bash
-# Start capture (requires authorization confirmation)
-./scripts/capture-session.sh start https://example.com \
-  --confirm YES_I_HAVE_AUTHORIZATION
+# Start capture
+./scripts/capture-session.sh start https://example.com
 
 # (Operate browser manually with proxy at 127.0.0.1:18080)
 
@@ -160,22 +156,17 @@ The skill intelligently extracts information from your request:
 # Only capture traffic to specific hosts
 ./scripts/capture-session.sh start https://example.com \
   --allow-hosts "example.com,*.example.com"
-
-# Or use a policy file
-./scripts/capture-session.sh start https://example.com \
-  --policy config/policy.json
 ```
 
 ### Commands Reference
 
 ```bash
-capture-session.sh start <url>      # Start capture (requires --confirm)
+capture-session.sh start <url>      # Start capture
 capture-session.sh stop             # Stop capture and generate analysis
 capture-session.sh status           # Check if capture is running
-capture-session.sh validate <url>   # Validate URL format and reachability
+capture-session.sh progress         # Show capture progress (requests, size, duration)
 capture-session.sh analyze          # Generate AI analysis bundle
 capture-session.sh doctor           # Check environment prerequisites
-scripts/git-doctor.sh               # Diagnose git sync/auth/connectivity
 capture-session.sh cleanup          # Clean up old capture sessions
 capture-session.sh diff <a> <b>     # Compare two capture sessions
 ```
@@ -203,32 +194,11 @@ Phase 4: HARVEST    → Stop capture (scripts/stopCaptures.sh)
 Phase 5: ANALYZE    → Read outputs, generate report
 ```
 
-## Security
+## Scope Control
 
-### Authorization Required
-
-- Capture requires explicit authorization: `--confirm YES_I_HAVE_AUTHORIZATION`
-- AI must confirm authorization before starting capture
-- Direct invocation of internal scripts is blocked
-
-### Sensitive Data Protection
-
-- Sensitive data (tokens, passwords, cookies) is automatically sanitized
-- Sanitization is **fail-closed**: if sanitize module fails, capture aborts
-- Use `--allow-no-sanitize` only in controlled test environments
-
-### Scope Control
-
-- Use `--allow-hosts` or `--policy` to restrict capture scope
+- Use `--allow-hosts` or `--deny-hosts` to restrict capture scope
 - Default: auto-generates scope from target URL domain
 - Out-of-scope traffic is logged to `*.scope_audit.json`
-
-### Private Network Protection
-
-- URL validation blocks private/loopback IPs by default
-- Use `--allow-private` to override (for local development)
-
-See [SECURITY_GUIDELINES.md](references/SECURITY_GUIDELINES.md) for full details.
 
 ## Troubleshooting
 

@@ -21,7 +21,6 @@
   <a href="#安装">安装</a> |
   <a href="#使用方法">使用方法</a> |
   <a href="docs/release-checklist.md">发布清单</a> |
-  <a href="#安全">安全</a> |
   <a href="README.md">English</a>
 </p>
 
@@ -44,10 +43,9 @@ Capture Analytics 是一个 Claude Code 技能，它让 AI 能够**自主**抓�
 - **智能浏览器自动化** - Playwright 驱动的网站探索
 - **智能输入提取** - 从自然语言中提取 URL 和分析目标
 - **多格式输出** - HAR、NDJSON 索引、AI 友好摘要
-- **安全优先** - 授权确认、数据脱敏、范围控制
+- **范围控制** - 限制抓包到特定主机
 - **跨平台** - Linux (GNOME)、macOS 及手动代理模式
 - **全面分析** - 性能分析、安全检测、调试诊断、API 发现
-- **120 个测试用例** - 健壮的测试覆盖（79 Python + 41 Shell）
 
 ## 快速开始
 
@@ -120,16 +118,15 @@ git clone https://github.com/dtamade/fafafa-skills-capture-analytics.git \
 ```
 "帮我分析 https://example.com 的网络请求"
 "抓包看看这个 API 为什么返回错误"
-"分析一下 mysite.com 的性能问题，这是我的网站"
+"分析一下 localhost:3000 的性能问题"
 ```
 
 Claude 会：
-1. 询问授权确认（安全检查）
-2. 启动 mitmproxy 抓包
-3. 通过 Playwright 打开浏览器
-4. 浏览并探索网站
-5. 停止抓包并处理数据
-6. 呈现分析结果
+1. 启动 mitmproxy 抓包
+2. 通过 Playwright 打开浏览器
+3. 浏览并探索网站
+4. 停止抓包并处理数据
+5. 呈现分析结果
 
 ### 智能输入提取
 
@@ -138,15 +135,14 @@ Claude 会：
 | 你说 | AI 理解 |
 |------|---------|
 | "分析 example.com 的性能" | URL=example.com, 目标=性能分析 |
-| "看看 mysite.com 为什么慢，我有权限" | URL=mysite.com, 授权=已确认 |
-| "帮我抓包" | AI 会询问 URL 和授权 |
+| "抓包 localhost:3000" | URL=http://localhost:3000 |
+| "看看 192.168.1.1 的请求" | URL=http://192.168.1.1 |
 
 ### 手动模式
 
 ```bash
-# 启动抓包（需要授权确认）
-./scripts/capture-session.sh start https://example.com \
-  --confirm YES_I_HAVE_AUTHORIZATION
+# 启动抓包
+./scripts/capture-session.sh start https://example.com
 
 # （手动操作浏览器，代理地址 127.0.0.1:18080）
 
@@ -160,22 +156,17 @@ Claude 会：
 # 只抓取特定主机的流量
 ./scripts/capture-session.sh start https://example.com \
   --allow-hosts "example.com,*.example.com"
-
-# 或者使用策略文件
-./scripts/capture-session.sh start https://example.com \
-  --policy config/policy.json
 ```
 
 ### 命令参考
 
 ```bash
-capture-session.sh start <url>      # 启动抓包（需要 --confirm）
+capture-session.sh start <url>      # 启动抓包
 capture-session.sh stop             # 停止抓包并生成分析
 capture-session.sh status           # 检查抓包状态
-capture-session.sh validate <url>   # 验证 URL 格式和可达性
+capture-session.sh progress         # 显示抓包进度（请求数、大小、时长）
 capture-session.sh analyze          # 生成 AI 分析包
 capture-session.sh doctor           # 检查环境前置条件
-scripts/git-doctor.sh               # 诊断 Git 同步/鉴权/连通性
 capture-session.sh cleanup          # 清理旧的抓包数据
 capture-session.sh diff <a> <b>     # 对比两次抓包
 ```
@@ -203,32 +194,11 @@ capture-session.sh diff <a> <b>     # 对比两次抓包
 阶段 5: ANALYZE（分析）  → 读取输出，生成报告
 ```
 
-## 安全
+## 范围控制
 
-### 授权要求
-
-- 抓包需要明确授权：`--confirm YES_I_HAVE_AUTHORIZATION`
-- AI 必须在启动抓包前确认授权
-- 内部脚本的直接调用会被阻止
-
-### 敏感数据保护
-
-- 敏感数据（令牌、密码、Cookie）会自动脱敏
-- 脱敏采用**失败即关闭**策略：如果脱敏模块失败，抓包会中止
-- 仅在受控测试环境中使用 `--allow-no-sanitize`
-
-### 范围控制
-
-- 使用 `--allow-hosts` 或 `--policy` 限制抓包范围
+- 使用 `--allow-hosts` 或 `--deny-hosts` 限制抓包范围
 - 默认：从目标 URL 域名自动生成范围
 - 超出范围的流量会记录到 `*.scope_audit.json`
-
-### 私网保护
-
-- URL 验证默认阻止私有/回环 IP
-- 使用 `--allow-private` 覆盖（用于本地开发）
-
-详见 [SECURITY_GUIDELINES.md](references/SECURITY_GUIDELINES.md)。
 
 ## 故障排除
 
@@ -254,7 +224,7 @@ capture-analytics/
 │   └── ...                     # 分析工具
 ├── references/                 # 详细文档
 ├── templates/                  # 报告模板
-└── tests/                      # 测试套件（120 个测试）
+└── tests/                      # 测试套件
 ```
 
 ## 贡献

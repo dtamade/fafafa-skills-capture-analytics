@@ -15,7 +15,7 @@ Commands:
   start <url>         Start capture for target URL
   stop                Stop capture and generate analysis
   status              Check if capture is running
-  validate <url>      Validate URL format (use before start)
+  progress            Show capture progress (requests, size, duration)
   analyze             Generate AI analysis bundle
   doctor              Check environment prerequisites
   cleanup             Clean up old capture sessions
@@ -28,7 +28,6 @@ Options:
   --allow-hosts <list>   Comma-separated allowed hosts
   --deny-hosts <list>    Comma-separated denied hosts
   --policy <file>        Policy JSON file for scope control
-  --confirm <phrase>     Authorization confirmation phrase
   --keep-days <N>        Cleanup: keep captures from last N days
   --keep-size <SIZE>     Cleanup: keep latest captures up to SIZE
   --secure               Cleanup: securely delete (shred)
@@ -41,10 +40,10 @@ Scope Control:
 
 Examples:
   capture-session.sh doctor
-  capture-session.sh validate https://example.com
-  capture-session.sh validate https://example.com --check-reachable
-  capture-session.sh start https://example.com --confirm YES_I_HAVE_AUTHORIZATION
+  capture-session.sh start https://example.com
+  capture-session.sh start http://localhost:3000
   capture-session.sh start https://example.com --allow-hosts "example.com,*.example.com"
+  capture-session.sh progress
   capture-session.sh stop
   capture-session.sh analyze
   capture-session.sh cleanup --keep-days 7
@@ -55,9 +54,9 @@ Examples:
 
 For AI Automation:
   1. AI calls: capture-session.sh doctor (verify environment)
-  2. AI calls: capture-session.sh validate <url> (validate URL format)
-  3. AI calls: capture-session.sh start <url> --confirm YES_I_HAVE_AUTHORIZATION
-  4. AI uses Playwright with proxy 127.0.0.1:18080
+  2. AI calls: capture-session.sh start <url>
+  3. AI uses Playwright with proxy 127.0.0.1:18080
+  4. AI calls: capture-session.sh progress (optional, check status)
   5. AI calls: capture-session.sh stop
   6. AI reads: captures/latest.ai.json
 EOF
@@ -84,7 +83,6 @@ PROXY_PORT="18080"
 ALLOW_HOSTS=""
 DENY_HOSTS=""
 POLICY_FILE=""
-CONFIRM_PHRASE=""
 KEEP_DAYS=""
 KEEP_SIZE=""
 SECURE_DELETE=""
@@ -124,11 +122,6 @@ while [[ $# -gt 0 ]]; do
         --policy)
             require_value_arg "$1" "${2:-}"
             POLICY_FILE="${2:-}"
-            shift 2
-            ;;
-        --confirm)
-            require_value_arg "$1" "${2:-}"
-            CONFIRM_PHRASE="${2:-}"
             shift 2
             ;;
         --keep-days)
@@ -183,20 +176,10 @@ case "$COMMAND" in
             exit 1
         fi
 
-        if [[ "$CONFIRM_PHRASE" != "YES_I_HAVE_AUTHORIZATION" ]]; then
-            err "Authorization required to capture network traffic."
-            err "Use: capture-session.sh start <url> --confirm YES_I_HAVE_AUTHORIZATION"
-            exit 1
+        # Auto-add https:// if no scheme provided
+        if [[ ! "$TARGET_URL" =~ ^https?:// ]]; then
+            TARGET_URL="https://$TARGET_URL"
         fi
-
-        # Validate URL format
-        URL_VALIDATION="$(python3 "$SCRIPT_DIR/validate_url.py" "$TARGET_URL" 2>/dev/null)" || {
-            URL_ERROR="$(echo "$URL_VALIDATION" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error','Invalid URL'))" 2>/dev/null || echo "Invalid URL format")"
-            err "URL validation failed: $URL_ERROR"
-            exit 1
-        }
-        # Use normalized URL
-        TARGET_URL="$(echo "$URL_VALIDATION" | python3 -c "import sys,json; print(json.load(sys.stdin)['normalized_url'])")"
 
         # Generate default scope from target URL if not specified
         TARGET_HOST="$(python3 "$SCRIPT_DIR/policy.py" generate "$TARGET_URL" 2>/dev/null | python3 -c "import sys,json; p=json.load(sys.stdin); print(','.join(p['scope']['allow_hosts']))" 2>/dev/null || echo "")"
@@ -215,14 +198,13 @@ case "$COMMAND" in
         fi
         echo ""
 
-        # P0-2.1 Fix: Use array instead of eval to prevent command injection
+        # Use array instead of eval to prevent command injection
         START_CMD=("$SCRIPT_DIR/startCaptures.sh" --program -d "$WORK_DIR" -P "$PROXY_PORT")
         [[ -n "$ALLOW_HOSTS" ]] && START_CMD+=(--allow-hosts "$ALLOW_HOSTS")
         [[ -n "$DENY_HOSTS" ]] && START_CMD+=(--deny-hosts "$DENY_HOSTS")
         [[ -n "$POLICY_FILE" ]] && START_CMD+=(--policy "$POLICY_FILE")
 
-        # P1-2: Set authorization token for startCaptures.sh
-        _CAPTURE_AUTHORIZED=YES "${START_CMD[@]}"
+        "${START_CMD[@]}"
 
         echo ""
         echo "=== Next Steps for AI ==="
@@ -283,32 +265,61 @@ case "$COMMAND" in
         "${DOCTOR_CMD[@]}"
         ;;
 
-    validate)
-        # Validate URL without starting capture
-        # Accept URL from TARGET_URL or first EXTRA_ARG (for non-domain-like inputs)
-        URL_TO_VALIDATE="$TARGET_URL"
-        if [[ -z "$URL_TO_VALIDATE" && ${#EXTRA_ARGS[@]} -gt 0 ]]; then
-            URL_TO_VALIDATE="${EXTRA_ARGS[0]}"
-            EXTRA_ARGS=("${EXTRA_ARGS[@]:1}")
-        fi
-
-        if [[ -z "$URL_TO_VALIDATE" ]]; then
-            err "URL required for validate command"
+    progress)
+        # Show capture progress
+        ENV_FILE="$WORK_DIR/captures/proxy_info.env"
+        if [[ ! -f "$ENV_FILE" ]]; then
+            err "No capture running"
             exit 1
         fi
 
-        VALIDATE_CMD=(python3 "$SCRIPT_DIR/validate_url.py" "$URL_TO_VALIDATE")
+        MITM_PID="$(read_kv "MITM_PID" "$ENV_FILE")"
+        STARTED_AT="$(read_kv "STARTED_AT" "$ENV_FILE")"
+        LISTEN_PORT="$(read_kv "LISTEN_PORT" "$ENV_FILE")"
 
-        # Add reachability check if requested
-        for arg in "${EXTRA_ARGS[@]}"; do
-            case "$arg" in
-                --check-reachable|-c)
-                    VALIDATE_CMD+=(--check-reachable)
-                    ;;
-            esac
-        done
+        if [[ ! "$MITM_PID" =~ ^[0-9]+$ ]] || ! kill -0 "$MITM_PID" 2>/dev/null; then
+            err "Capture not running (stale state)"
+            exit 1
+        fi
 
-        "${VALIDATE_CMD[@]}"
+        # Calculate duration
+        if [[ -n "$STARTED_AT" ]]; then
+            START_EPOCH=$(date -d "$STARTED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%d %H:%M:%S" "$STARTED_AT" +%s 2>/dev/null || echo "0")
+            NOW_EPOCH=$(date +%s)
+            DURATION_SEC=$((NOW_EPOCH - START_EPOCH))
+            DURATION_MIN=$((DURATION_SEC / 60))
+            DURATION_SEC_REM=$((DURATION_SEC % 60))
+            DURATION="${DURATION_MIN}m ${DURATION_SEC_REM}s"
+        else
+            DURATION="unknown"
+        fi
+
+        # Find current flow file and get size
+        FLOW_FILE="$WORK_DIR/captures/capture.flow"
+        if [[ -f "$FLOW_FILE" ]]; then
+            FLOW_SIZE=$(du -h "$FLOW_FILE" 2>/dev/null | cut -f1 || echo "0")
+            # Count requests by parsing flow file (rough estimate)
+            REQ_COUNT=$(python3 -c "
+from mitmproxy import io
+try:
+    with open('$FLOW_FILE', 'rb') as f:
+        count = sum(1 for _ in io.FlowReader(f).stream())
+    print(count)
+except:
+    print('?')
+" 2>/dev/null || echo "?")
+        else
+            FLOW_SIZE="0"
+            REQ_COUNT="0"
+        fi
+
+        echo "=== Capture Progress ==="
+        echo "Status:    RUNNING"
+        echo "Duration:  $DURATION"
+        echo "Requests:  $REQ_COUNT"
+        echo "Data Size: $FLOW_SIZE"
+        echo "Proxy:     127.0.0.1:${LISTEN_PORT:-18080}"
+        echo "PID:       $MITM_PID"
         ;;
 
     cleanup)
