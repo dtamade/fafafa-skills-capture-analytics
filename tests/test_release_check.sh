@@ -65,6 +65,17 @@ test_unknown_option_fails() {
     fi
 }
 
+test_nullglob_guard_present() {
+    if grep -q 'shopt -s nullglob' "$RELEASE_CHECK_SCRIPT" &&
+       grep -q 'No shell tests found in tests/test_\*\.sh' "$RELEASE_CHECK_SCRIPT"; then
+        echo "✓ test_nullglob_guard_present passed"
+        return 0
+    else
+        echo "✗ test_nullglob_guard_present failed"
+        return 1
+    fi
+}
+
 run_all_tests() {
     echo "Running release-check.sh tests..."
     echo ""
@@ -75,6 +86,7 @@ run_all_tests() {
     test_dry_run || ((failed++))
     test_skip_flags || ((failed++))
     test_unknown_option_fails || ((failed++))
+    test_nullglob_guard_present || ((failed++))
 
     echo ""
     if [[ "$failed" -eq 0 ]]; then
@@ -87,4 +99,3 @@ run_all_tests() {
 }
 
 run_all_tests
-

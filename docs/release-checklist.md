@@ -87,9 +87,7 @@ Run:
 
 ```bash
 git revert <bad_commit_sha>
-./install.sh --check
-pytest -q
-for test in tests/*.sh; do bash "$test"; done
+./scripts/release-check.sh
 ```
 
 If multiple commits are involved, revert each in reverse order.

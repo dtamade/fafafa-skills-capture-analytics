@@ -98,6 +98,14 @@ run_step() {
 
 run_shell_tests() {
     local test
+    shopt -s nullglob
+    local test_files=(tests/test_*.sh)
+
+    if [[ "${#test_files[@]}" -eq 0 ]]; then
+        echo "[ERROR] No shell tests found in tests/test_*.sh" >&2
+        return 1
+    fi
+
     for test in tests/test_*.sh; do
         bash "$test"
     done
@@ -133,4 +141,3 @@ if [[ "$DRY_RUN" == "true" ]]; then
 else
     echo "All release checks passed."
 fi
-

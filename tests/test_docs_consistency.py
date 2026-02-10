@@ -70,3 +70,5 @@ def test_release_checklist_uses_release_check_script() -> None:
 
     assert "./scripts/release-check.sh" in checklist
     assert "./scripts/release-check.sh --dry-run" in checklist
+    assert "for test in tests/*.sh; do bash \"$test\"; done" not in checklist
+    assert "pytest -q" not in checklist
