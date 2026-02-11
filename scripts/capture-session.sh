@@ -28,6 +28,7 @@ Options:
   --allow-hosts <list>   Comma-separated allowed hosts
   --deny-hosts <list>    Comma-separated denied hosts
   --policy <file>        Policy JSON file for scope control
+  --force-recover        Start: clean stale state file before launch
   --keep-days <N>        Cleanup: keep captures from last N days
   --keep-size <SIZE>     Cleanup: keep latest captures up to SIZE
   --secure               Cleanup: securely delete (shred)
@@ -43,6 +44,7 @@ Examples:
   capture-session.sh start https://example.com
   capture-session.sh start http://localhost:3000
   capture-session.sh start https://example.com --allow-hosts "example.com,*.example.com"
+  capture-session.sh start https://example.com --force-recover
   capture-session.sh progress
   capture-session.sh stop
   capture-session.sh analyze
@@ -83,6 +85,7 @@ PROXY_PORT="18080"
 ALLOW_HOSTS=""
 DENY_HOSTS=""
 POLICY_FILE=""
+FORCE_RECOVER=""
 KEEP_DAYS=""
 KEEP_SIZE=""
 SECURE_DELETE=""
@@ -123,6 +126,10 @@ while [[ $# -gt 0 ]]; do
             require_value_arg "$1" "${2:-}"
             POLICY_FILE="${2:-}"
             shift 2
+            ;;
+        --force-recover)
+            FORCE_RECOVER="true"
+            shift
             ;;
         --keep-days)
             require_value_arg "$1" "${2:-}"
@@ -203,6 +210,7 @@ case "$COMMAND" in
         [[ -n "$ALLOW_HOSTS" ]] && START_CMD+=(--allow-hosts "$ALLOW_HOSTS")
         [[ -n "$DENY_HOSTS" ]] && START_CMD+=(--deny-hosts "$DENY_HOSTS")
         [[ -n "$POLICY_FILE" ]] && START_CMD+=(--policy "$POLICY_FILE")
+        [[ "$FORCE_RECOVER" == "true" ]] && START_CMD+=(--force-recover)
 
         "${START_CMD[@]}"
 

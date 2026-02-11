@@ -42,21 +42,52 @@ Optional (partial checks):
 Run:
 
 ```bash
-./scripts/capture-session.sh start https://example.com
+./scripts/capture-session.sh doctor
+./scripts/capture-session.sh start https://example.com --force-recover
+./scripts/capture-session.sh start http://localhost:3000
+./scripts/capture-session.sh start https://example.com --allow-hosts 'api\.example\.com'
 ./scripts/capture-session.sh status
 ./scripts/capture-session.sh progress
+./scripts/capture-session.sh navlog append --action navigate --url "https://example.com"
 ./scripts/capture-session.sh stop
 ./scripts/capture-session.sh analyze
+./scripts/capture-session.sh cleanup --keep-days 7
+./scripts/capture-session.sh cleanup --keep-size 1G --dry-run
+./scripts/capture-session.sh cleanup --secure --keep-days 3
+./scripts/capture-session.sh diff captures/a.index.ndjson captures/b.index.ndjson
 ```
+
+Scope note: use `--allow-hosts` to capture only matching hosts.
+
+Scope note: use `--deny-hosts` to exclude noisy or third-party hosts.
+
+Scope note: use `--policy <file>` to load a JSON scope policy.
+
+Cleanup note: use `--keep-days <N>` to retain recent captures.
+
+Cleanup note: use `--keep-size <SIZE>` to cap retained data volume.
+
+Cleanup note: use `--secure` to shred files during deletion.
+
+Help note: run `./scripts/capture-session.sh --help` for full CLI reference.
+
+Path note: use `-d, --dir <path>` to select working directory.
+
+Port note: use `-P, --port <port>` to change proxy listener port.
 
 Then confirm these artifacts exist:
 
 - `captures/latest.flow`
 - `captures/latest.har`
+- `captures/latest.log`
 - `captures/latest.index.ndjson`
 - `captures/latest.summary.md`
 - `captures/latest.ai.json`
 - `captures/latest.ai.md`
+- `captures/latest.ai.bundle.txt`
+- `captures/latest.manifest.json`
+- `captures/latest.scope_audit.json`
+- `captures/latest.navigation.ndjson`
 
 ## 4) Verify CI and merge
 

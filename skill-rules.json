@@ -69,7 +69,8 @@
         "**/captures/*.index.ndjson",
         "**/captures/*.manifest.json",
         "**/captures/*.scope_audit.json",
-        "**/captures/*.navigation.ndjson"
+        "**/captures/*.navigation.ndjson",
+        "**/captures/*.log"
       ]
     }
   }

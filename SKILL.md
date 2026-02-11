@@ -87,11 +87,19 @@ capture-session.sh start https://example.com --allow-hosts "example.com,*.exampl
 ```
 
 Key flags:
-- `-d <dir>` — output directory for capture files
-- `-P <port>` — custom port (default 18080)
+- `-d, --dir <path>` — output directory for capture files
+- `-P, --port <port>` — custom port (default 18080)
 - `--allow-hosts <list>` — restrict capture to these hosts (comma-separated, supports *)
 - `--deny-hosts <list>` — always ignore these hosts (takes precedence)
 - `--policy <file>` — JSON policy file for complex scope rules
+
+Cleanup flags:
+- `--keep-days <N>` — keep capture files from recent N days
+- `--keep-size <SIZE>` — keep latest captures up to total size
+- `--secure` — securely delete old capture files
+- `--dry-run` — preview cleanup result without deleting
+- `--force-recover` — clean stale state file before start
+- `-h, --help` — print CLI help and exit
 
 **Scope Control:**
 By default, capture-session.sh auto-generates a scope from the target URL domain.
@@ -149,12 +157,15 @@ capture.flow → HAR conversion
 |------|--------|-----|
 | `*.flow` | mitmproxy binary | Raw immutable capture |
 | `*.har` | HAR 1.2 JSON | Standard HTTP archive |
+| `*.log` | Text log | Capture runtime diagnostics |
 | `*.index.ndjson` | NDJSON | Per-request index records |
 | `*.summary.md` | Markdown | Quick statistics overview |
 | `*.ai.json` | JSON | Structured analysis input |
 | `*.ai.md` | Markdown | AI-friendly brief |
+| `*.ai.bundle.txt` | Text | Consolidated AI-ready bundle |
 | `*.manifest.json` | JSON | Session metadata |
 | `*.scope_audit.json` | JSON | Out-of-scope traffic report |
+| `*.navigation.ndjson` | NDJSON | Browser navigation timeline/events |
 
 ### Phase 5: ANALYZE (Deep Analysis)
 
@@ -215,11 +226,59 @@ User: "分析 captures/ 目录下的抓包数据"
 User: "对比这两次抓包的差异"
 → AI reads two sets of data, generates comparison report
 
+```bash
+capture-session.sh diff captures/a.index.ndjson captures/b.index.ndjson
+```
+
+### Doctor Preflight
+```bash
+capture-session.sh doctor
+```
+Verify environment prerequisites before capture.
+
+### Localhost Start Example
+```bash
+capture-session.sh start http://localhost:3000
+```
+Use this when analyzing local web apps without TLS.
+
+### Analyze Latest Capture
+```bash
+capture-session.sh analyze
+```
+Generate AI-ready analysis bundle from latest artifacts.
+
+### Cleanup Command Examples
+```bash
+capture-session.sh cleanup --keep-days 7
+capture-session.sh cleanup --keep-size 1G --dry-run
+capture-session.sh cleanup --secure --keep-days 3
+```
+Use cleanup to control retention after analysis runs.
+
+### Check Status
+```bash
+capture-session.sh status
+```
+Check whether capture process is running before stop/analyze.
+
+### Help Command
+```bash
+capture-session.sh --help
+```
+Show command list and option reference quickly.
+
 ### Check Progress
 ```bash
 capture-session.sh progress
 ```
 Shows: duration, request count, data size
+
+### Record Navigation Events
+```bash
+capture-session.sh navlog append --action navigate --url "https://example.com"
+```
+Use navlog during exploration to preserve key browser actions for later analysis.
 
 ## Report Template
 
@@ -251,7 +310,18 @@ fafafa-skills-capture-analytics/
 │   ├── capture-session.sh             # One-shot capture session
 │   ├── flow2har.py                    # Flow → HAR converter
 │   ├── flow_report.py                 # Index & summary generator
-│   └── ai_brief.py                    # AI analysis brief builder
+│   ├── ai_brief.py                    # AI analysis brief builder
+│   ├── cleanup.py                     # Cleanup policy helper
+│   ├── common.sh                      # Shared shell helper functions
+│   ├── doctor.sh                      # Environment diagnostics
+│   ├── git-doctor.sh                  # Git environment diagnostics
+│   ├── policy.py                      # Scope policy validator
+│   ├── proxy_utils.sh                 # Proxy utility helpers
+│   ├── release-check.sh               # Release verification helper
+│   ├── scope_audit.py                 # Scope audit report generator
+│   ├── cleanupCaptures.sh             # Capture retention cleanup
+│   ├── navlog.sh                      # Navigation log helper
+│   └── diff_captures.py               # Capture index diff tool
 └── templates/
     ├── analysis-report.md             # Report output template
     └── exploration-strategies.json    # Pre-built exploration configs
@@ -266,4 +336,5 @@ fafafa-skills-capture-analytics/
 | Playwright can't connect through proxy | Ensure mitmproxy CA cert is trusted, or use `--ignore-https-errors` |
 | HAR conversion fails | Script falls back to Python converter automatically |
 | Empty capture (0 requests) | Check proxy routing — Playwright must be configured to use the proxy |
+| Found stale state file | Restart with `capture-session.sh start https://example.com --force-recover` |
 | Permission denied on scripts | Run `chmod +x scripts/*.sh` |

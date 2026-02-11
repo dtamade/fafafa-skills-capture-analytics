@@ -154,6 +154,28 @@ The skill intelligently extracts information from your request:
   --allow-hosts "example.com,*.example.com"
 ```
 
+### Custom Dir/Port Examples
+
+```bash
+# Use a custom working directory
+capture-session.sh start https://example.com -d /tmp/capture-demo
+
+# Use a custom proxy port
+capture-session.sh start https://example.com -P 28080
+```
+
+### Navlog Example
+
+```bash
+capture-session.sh navlog append --action navigate --url "https://example.com"
+```
+
+### Help Command
+
+```bash
+capture-session.sh --help
+```
+
 ### Commands Reference
 
 ```bash
@@ -165,6 +187,29 @@ capture-session.sh analyze          # Generate AI analysis bundle
 capture-session.sh doctor           # Check environment prerequisites
 capture-session.sh cleanup          # Clean up old capture sessions
 capture-session.sh diff <a> <b>     # Compare two capture sessions
+capture-session.sh navlog <cmd>     # Manage navigation log (init/append/show)
+```
+
+### Global Options
+
+- `-d, --dir <path>` set a custom working directory for capture artifacts
+- `-P, --port <port>` set a custom proxy port (default 18080)
+- `-h, --help` show CLI help and available commands
+- `--force-recover` clean stale state file before start
+
+### Cleanup Options
+
+- `--keep-days <N>` keep recent capture days
+- `--keep-size <SIZE>` cap retained capture size
+- `--secure` securely delete old files
+- `--dry-run` preview cleanup changes only
+
+### Cleanup Command Examples
+
+```bash
+capture-session.sh cleanup --keep-days 7
+capture-session.sh cleanup --keep-size 1G --dry-run
+capture-session.sh cleanup --secure --keep-days 3
 ```
 
 ## Output Files
@@ -175,18 +220,23 @@ After capture, you'll find these files:
 |------|-------------|
 | `captures/latest.flow` | Raw mitmproxy capture |
 | `captures/latest.har` | HAR 1.2 archive |
+| `captures/latest.log` | Capture runtime log for troubleshooting |
 | `captures/latest.index.ndjson` | Per-request structured index |
 | `captures/latest.summary.md` | Quick statistics |
 | `captures/latest.ai.json` | Structured analysis input |
 | `captures/latest.ai.md` | AI-friendly brief |
+| `captures/latest.ai.bundle.txt` | Consolidated AI-ready text bundle |
+| `captures/latest.manifest.json` | Session manifest metadata |
+| `captures/latest.scope_audit.json` | Out-of-scope traffic audit report |
+| `captures/latest.navigation.ndjson` | Browser navigation event log |
 
 ## Five-Phase Workflow
 
 ```
 Phase 1: RECON      → Understand target and choose strategy
-Phase 2: CAPTURE    → Start mitmproxy (scripts/startCaptures.sh)
+Phase 2: CAPTURE    → Start capture-session wrapper (capture-session.sh start)
 Phase 3: EXPLORE    → Browse with Playwright through proxy
-Phase 4: HARVEST    → Stop capture (scripts/stopCaptures.sh)
+Phase 4: HARVEST    → Stop capture-session wrapper (capture-session.sh stop)
 Phase 5: ANALYZE    → Read outputs, generate report
 ```
 
@@ -195,14 +245,15 @@ Phase 5: ANALYZE    → Read outputs, generate report
 - Use `--allow-hosts` or `--deny-hosts` to restrict capture scope
 - Default: auto-generates scope from target URL domain
 - Out-of-scope traffic is logged to `*.scope_audit.json`
+- Use `--policy <file>` to load a custom JSON scope policy
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `Missing command: mitmdump` | mitmproxy not installed | `pip install mitmproxy` |
-| `Port is already in use: 18080` | Another capture running | `./scripts/stopCaptures.sh` or use `-P <port>` |
-| `Found stale state file` | Previous capture crashed | `./scripts/startCaptures.sh --force-recover` |
+| `Port is already in use: 18080` | Another capture running | `capture-session.sh stop` or use `-P <port>` |
+| `Found stale state file` | Previous capture crashed | `capture-session.sh start https://example.com --force-recover` |
 | HAR status: `failed` | mitmdump HAR export error | Try `--har-backend python` |
 
 ## Project Structure
@@ -218,7 +269,17 @@ capture-analytics/
 │   ├── release-check.sh        # One-command release readiness check
 │   ├── startCaptures.sh        # Start mitmproxy
 │   ├── stopCaptures.sh         # Stop & process pipeline
-│   └── ...                     # Analysis utilities
+│   ├── doctor.sh               # Environment diagnostics
+│   ├── cleanupCaptures.sh      # Capture retention cleanup
+│   ├── navlog.sh               # Navigation log helper
+│   ├── diff_captures.py        # Capture index diff utility
+│   ├── policy.py               # Scope policy helper
+│   ├── analyzeLatest.sh        # Generate latest analysis outputs
+│   ├── ai.sh                   # AI bundle shortcut command
+│   ├── flow2har.py             # Convert flow to HAR
+│   ├── flow_report.py          # Build index and summary
+│   ├── ai_brief.py             # Build AI analysis brief
+│   └── scope_audit.py          # Scope audit report generator
 ├── references/                 # Detailed documentation
 ├── templates/                  # Report templates
 └── tests/                      # Test suite

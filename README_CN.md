@@ -154,6 +154,28 @@ Claude 会：
   --allow-hosts "example.com,*.example.com"
 ```
 
+### 自定义目录/端口示例
+
+```bash
+# 使用自定义工作目录
+capture-session.sh start https://example.com -d /tmp/capture-demo
+
+# 使用自定义代理端口
+capture-session.sh start https://example.com -P 28080
+```
+
+### Navlog 示例
+
+```bash
+capture-session.sh navlog append --action navigate --url "https://example.com"
+```
+
+### 帮助命令
+
+```bash
+capture-session.sh --help
+```
+
 ### 命令参考
 
 ```bash
@@ -165,6 +187,29 @@ capture-session.sh analyze          # 生成 AI 分析包
 capture-session.sh doctor           # 检查环境前置条件
 capture-session.sh cleanup          # 清理旧的抓包数据
 capture-session.sh diff <a> <b>     # 对比两次抓包
+capture-session.sh navlog <cmd>     # 管理导航日志（init/append/show）
+```
+
+### 全局选项
+
+- `-d, --dir <path>` 设置抓包产物输出目录
+- `-P, --port <port>` 设置自定义代理端口（默认 18080）
+- `-h, --help` 显示 CLI 帮助与可用命令
+- `--force-recover` 启动前清理陈旧状态文件
+
+### 清理选项
+
+- `--keep-days <N>` 保留最近 N 天抓包
+- `--keep-size <SIZE>` 按总大小限制保留抓包
+- `--secure` 安全擦除旧文件
+- `--dry-run` 仅预览清理结果
+
+### 清理命令示例
+
+```bash
+capture-session.sh cleanup --keep-days 7
+capture-session.sh cleanup --keep-size 1G --dry-run
+capture-session.sh cleanup --secure --keep-days 3
 ```
 
 ## 输出文件
@@ -175,18 +220,23 @@ capture-session.sh diff <a> <b>     # 对比两次抓包
 |------|------|
 | `captures/latest.flow` | 原始 mitmproxy 抓包数据 |
 | `captures/latest.har` | HAR 1.2 归档文件 |
+| `captures/latest.log` | 抓包运行日志（排障用） |
 | `captures/latest.index.ndjson` | 逐请求结构化索引 |
 | `captures/latest.summary.md` | 快速统计摘要 |
 | `captures/latest.ai.json` | 结构化分析输入 |
 | `captures/latest.ai.md` | AI 友好摘要 |
+| `captures/latest.ai.bundle.txt` | 聚合后的 AI 可读文本 bundle |
+| `captures/latest.manifest.json` | 会话清单元数据 |
+| `captures/latest.scope_audit.json` | 越界流量审计报告 |
+| `captures/latest.navigation.ndjson` | 浏览器导航事件日志 |
 
 ## 五阶段工作流
 
 ```
 阶段 1: RECON（侦察）    → 理解目标，选择策略
-阶段 2: CAPTURE（抓包）  → 启动 mitmproxy
+阶段 2: CAPTURE（抓包）  → 启动统一入口（capture-session.sh start）
 阶段 3: EXPLORE（探索）  → 通过代理使用 Playwright 浏览
-阶段 4: HARVEST（收获）  → 停止抓包，处理数据
+阶段 4: HARVEST（收获）  → 停止统一入口（capture-session.sh stop）
 阶段 5: ANALYZE（分析）  → 读取输出，生成报告
 ```
 
@@ -195,14 +245,15 @@ capture-session.sh diff <a> <b>     # 对比两次抓包
 - 使用 `--allow-hosts` 或 `--deny-hosts` 限制抓包范围
 - 默认：从目标 URL 域名自动生成范围
 - 超出范围的流量会记录到 `*.scope_audit.json`
+- 使用 `--policy <file>` 加载自定义 JSON 范围策略
 
 ## 故障排除
 
 | 现象 | 原因 | 解决方案 |
 |------|------|----------|
 | `Missing command: mitmdump` | mitmproxy 未安装 | `pip install mitmproxy` |
-| `Port is already in use: 18080` | 另一个抓包正在运行 | `./scripts/stopCaptures.sh` 或使用 `-P <port>` |
-| `Found stale state file` | 上次抓包异常退出 | `./scripts/startCaptures.sh --force-recover` |
+| `Port is already in use: 18080` | 另一个抓包正在运行 | `capture-session.sh stop` 或使用 `-P <port>` |
+| `Found stale state file` | 上次抓包异常退出 | `capture-session.sh start https://example.com --force-recover` |
 | HAR 状态: `failed` | mitmdump HAR 导出错误 | 尝试 `--har-backend python` |
 
 ## 项目结构
@@ -218,7 +269,17 @@ capture-analytics/
 │   ├── release-check.sh        # 一键发布就绪检查
 │   ├── startCaptures.sh        # 启动 mitmproxy
 │   ├── stopCaptures.sh         # 停止并处理流水线
-│   └── ...                     # 分析工具
+│   ├── doctor.sh               # 环境诊断
+│   ├── cleanupCaptures.sh      # 抓包保留与清理
+│   ├── navlog.sh               # 导航日志助手
+│   ├── diff_captures.py        # 抓包索引差异对比
+│   ├── policy.py               # 范围策略辅助工具
+│   ├── analyzeLatest.sh        # 生成最新分析产物
+│   ├── ai.sh                   # AI bundle 快捷命令
+│   ├── flow2har.py             # flow 转 HAR
+│   ├── flow_report.py          # 生成索引与摘要
+│   ├── ai_brief.py             # 生成 AI 分析简报
+│   └── scope_audit.py          # 范围审计报告生成器
 ├── references/                 # 详细文档
 ├── templates/                  # 报告模板
 └── tests/                      # 测试套件（详见 tests/）

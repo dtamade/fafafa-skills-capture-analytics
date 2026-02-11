@@ -156,6 +156,7 @@ def test_file_trigger_patterns_include_current_outputs():
         '.manifest.json',
         '.scope_audit.json',
         '.navigation.ndjson',
+        '.log',
     ]
 
     missing = []
