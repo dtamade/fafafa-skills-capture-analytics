@@ -655,20 +655,6 @@ def test_readme_cn_workflow_mentions_wrapper_commands() -> None:
     assert "capture-session.sh stop" in workflow
 
 
-def test_docs_include_browser_fallback_helper_examples() -> None:
-    readme_en = _read("README.md")
-    readme_cn = _read("README_CN.md")
-    skill_doc = _read("SKILL.md")
-    checklist = _read("docs/release-checklist.md")
-
-    token = "driveBrowserTraffic.sh"
-
-    assert token in readme_en, "README.md missing browser fallback helper docs"
-    assert token in readme_cn, "README_CN.md missing browser fallback helper docs"
-    assert token in skill_doc, "SKILL.md missing browser fallback helper docs"
-    assert token in checklist, "release-checklist missing browser fallback helper smoke command"
-
-
 def test_docs_include_drive_browser_traffic_helper() -> None:
     readme_en = _read("README.md")
     readme_cn = _read("README_CN.md")

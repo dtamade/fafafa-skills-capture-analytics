@@ -204,10 +204,8 @@ capture-session.sh start https://example.com -P 28080
 
 ```bash
 capture-session.sh navlog append --action navigate --url "https://example.com"
-# Alternative equals syntax
-capture-session.sh navlog append --action=navigate --url=https://example.com
 # Alternative equals syntax (more robust in some shells)
-capture-session.sh navlog append --action navigate --url "https://example.com"
+capture-session.sh navlog append --action=navigate --url=https://example.com
 ```
 
 ### Help Command

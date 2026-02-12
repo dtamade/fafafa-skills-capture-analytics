@@ -206,8 +206,6 @@ capture-session.sh start https://example.com -P 28080
 capture-session.sh navlog append --action navigate --url "https://example.com"
 # 等号写法（某些 shell 更稳）
 capture-session.sh navlog append --action=navigate --url=https://example.com
-# Alternative equals syntax (more robust in some shells)
-capture-session.sh navlog append --action navigate --url "https://example.com"
 ```
 
 ### 帮助命令
