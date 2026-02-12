@@ -527,6 +527,13 @@ fi
 if [[ "$PROGRAM_MODE" != "true" ]]; then
     echo " Proxy restore:  $PROXY_STATUS"
 fi
+if [[ "$REPORT_STATUS" == "no-flow" ]]; then
+    echo ""
+    echo " [!] No traffic captured (flow file is empty)."
+    echo "     Traffic must pass through proxy ${LISTEN_HOST:-127.0.0.1}:${LISTEN_PORT:-18080}."
+    echo "     Smoke test: curl -x http://${LISTEN_HOST:-127.0.0.1}:${LISTEN_PORT:-18080} http://example.com/"
+    echo "     If using HTTPS, trust mitmproxy CA cert or allow insecure certs in your client."
+fi
 echo ""
 if [[ -n "$FLOW_FILE" && -f "$FLOW_FILE" ]]; then
     echo " To inspect flow:"

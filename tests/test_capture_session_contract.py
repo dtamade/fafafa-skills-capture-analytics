@@ -150,3 +150,21 @@ def test_analyze_latest_default_target_dir_is_project_root() -> None:
     assert 'TARGET_DIR="$DEFAULT_BASE_DIR"' in script, (
         "analyzeLatest.sh should default TARGET_DIR to current project root"
     )
+
+
+def test_capture_scripts_include_no_flow_diagnostics_contract() -> None:
+    capture_script = _read("scripts/capture-session.sh")
+    stop_script = _read("scripts/stopCaptures.sh")
+
+    assert "Smoke test (must produce traffic through proxy)" in capture_script, (
+        "capture-session.sh should print proxy smoke-test guidance after start"
+    )
+    assert "curl -x http://127.0.0.1:$PROXY_PORT http://example.com/" in capture_script, (
+        "capture-session.sh should show explicit proxy traffic example"
+    )
+    assert "No traffic captured (flow file is empty)." in stop_script, (
+        "stopCaptures.sh should explain empty flow condition"
+    )
+    assert "Traffic must pass through proxy" in stop_script, (
+        "stopCaptures.sh should include proxy-routing hint when no flow"
+    )

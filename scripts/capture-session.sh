@@ -226,7 +226,9 @@ case "$COMMAND" in
         echo "1. Configure Playwright to use proxy: 127.0.0.1:$PROXY_PORT"
         echo "2. Navigate to: $TARGET_URL"
         echo "3. Explore the site as needed"
-        echo "4. Run: capture-session.sh stop -d $WORK_DIR"
+        echo "4. Smoke test (must produce traffic through proxy):"
+        echo "   curl -x http://127.0.0.1:$PROXY_PORT http://example.com/"
+        echo "5. Run: capture-session.sh stop -d $WORK_DIR"
         ;;
 
     stop)
