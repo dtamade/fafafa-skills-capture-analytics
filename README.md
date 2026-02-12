@@ -156,6 +156,19 @@ The skill intelligently extracts information from your request:
 ./scripts/capture-session.sh stop
 ```
 
+### Program Mode (Non-Browser Traffic)
+
+```bash
+# Start capture
+./scripts/capture-session.sh start https://example.com
+
+# Run target program with temporary proxy env vars
+./scripts/runWithProxyEnv.sh -P 18080 -- <your_program_command>
+
+# Stop and analyze
+./scripts/capture-session.sh stop
+```
+
 ### With Scope Control
 
 ```bash
@@ -177,6 +190,8 @@ capture-session.sh start https://example.com -P 28080
 ### Navlog Example
 
 ```bash
+capture-session.sh navlog append --action navigate --url "https://example.com"
+# Alternative equals syntax (more robust in some shells)
 capture-session.sh navlog append --action navigate --url "https://example.com"
 ```
 
@@ -265,6 +280,7 @@ Phase 5: ANALYZE    → Read outputs, generate report
 | `Port is already in use: 18080` | Another capture running | `capture-session.sh stop` or use `-P <port>` |
 | `Found stale state file` | Previous capture crashed | `capture-session.sh start https://example.com --force-recover` |
 | HAR status: `failed` | mitmdump HAR export error | Try `--har-backend python` |
+| `Looks like you launched a headed browser without having a XServer running` | Headed Playwright in non-GUI environment | Retry in headless mode or run with `xvfb-run`; fallback to program mode helper |
 
 ## Project Structure
 
@@ -282,6 +298,7 @@ capture-analytics/
 │   ├── doctor.sh               # Environment diagnostics
 │   ├── cleanupCaptures.sh      # Capture retention cleanup
 │   ├── navlog.sh               # Navigation log helper
+│   ├── runWithProxyEnv.sh      # Run command with temporary proxy env vars
 │   ├── diff_captures.py        # Capture index diff utility
 │   ├── policy.py               # Scope policy helper
 │   ├── analyzeLatest.sh        # Generate latest analysis outputs

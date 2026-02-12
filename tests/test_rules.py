@@ -206,16 +206,24 @@ if __name__ == '__main__':
     exit(run_all_tests())
 
 
-def test_playwright_enforcement_contract() -> None:
-    """Capture skill should strongly enforce Playwright-based workflow."""
+def test_multimode_enforcement_contract() -> None:
+    """Capture skill should enforce task-adaptive traffic generation modes."""
     rules = load_rules()
     cfg = rules['capture-analytics']
 
     assert cfg.get('enforcement') == 'block', (
-        'capture-analytics enforcement should be block to prevent skipping workflow'
+        'capture-analytics enforcement should remain block to avoid skipping capture workflow'
     )
 
     keywords = cfg.get('promptTriggers', {}).get('keywords', [])
-    required = ['playwright', 'browser automation', '浏览器自动化']
+    required = [
+        'playwright',
+        'browser automation',
+        '浏览器自动化',
+        'HTTP_PROXY',
+        'ALL_PROXY',
+        'program mode',
+        '环境变量抓包',
+    ]
     for token in required:
-        assert token in keywords, f'missing Playwright trigger keyword: {token}'
+        assert token in keywords, f'missing multimode trigger keyword: {token}'

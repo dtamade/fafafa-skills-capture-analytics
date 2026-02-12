@@ -28,7 +28,8 @@ Checks:
   [WARN] sha256          - sha256sum/shasum/openssl for integrity
   [WARN] shred           - Secure delete tool (optional)
   [WARN] ca-cert         - CA certificate status
-  [FAIL] playwright-mcp  - Playwright MCP/plugin not detected
+  [WARN] playwright-mcp  - Playwright MCP/plugin not detected (required only for browser mode)
+  [WARN] headed-ui       - Headed browser runtime (DISPLAY/Wayland/Xvfb)
 
 Exit codes:
   0 - All checks passed (or only warnings without --strict)
@@ -242,6 +243,31 @@ check_policy() {
     fi
 }
 
+# Check: headed browser runtime availability
+check_headed_runtime() {
+    local has_display="false"
+    local has_wayland="false"
+    local has_xvfb="false"
+
+    if [[ -n "${DISPLAY:-}" ]]; then
+        has_display="true"
+    fi
+    if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+        has_wayland="true"
+    fi
+    if command -v xvfb-run >/dev/null 2>&1; then
+        has_xvfb="true"
+    fi
+
+    if [[ "$has_display" == "true" || "$has_wayland" == "true" ]]; then
+        add_result "headed-ui" "pass" "GUI runtime detected" "DISPLAY/WAYLAND available"
+    elif [[ "$has_xvfb" == "true" ]]; then
+        add_result "headed-ui" "warn" "No GUI session" "Use xvfb-run for headed Playwright, or run headless"
+    else
+        add_result "headed-ui" "warn" "No GUI runtime" "Headed Playwright may fail. Use headless or install xvfb-run"
+    fi
+}
+
 # Check: Playwright MCP / plugin availability
 check_playwright_mcp() {
     local has_cli="false"
@@ -277,7 +303,7 @@ check_playwright_mcp() {
         [[ "$has_browser_cache" == "true" ]] && detail_parts+=("browser-cache")
         add_result "playwright-mcp" "warn" "Partially detected" "Detected: ${detail_parts[*]}. If AI skips browser actions, verify MCP tool permissions."
     else
-        add_result "playwright-mcp" "fail" "Not detected" "Install/playwright plugin and ensure MCP tools are enabled"
+        add_result "playwright-mcp" "warn" "Not detected" "Browser mode unavailable; use program mode with HTTP_PROXY/HTTPS_PROXY/ALL_PROXY"
     fi
 }
 
@@ -324,6 +350,7 @@ run_checks() {
     check_sha256
     check_shred
     check_ca_cert
+    check_headed_runtime
     check_playwright_mcp
 
     if [[ -n "$POLICY_FILE" ]]; then

@@ -111,45 +111,90 @@ while [[ $# -gt 0 ]]; do
             WORK_DIR="${2:-}"
             shift 2
             ;;
+        --dir=*)
+            WORK_DIR="${1#*=}"
+            [[ -z "$WORK_DIR" ]] && { err "Option --dir requires a value"; exit 1; }
+            shift
+            ;;
         -f|--file)
             require_value_arg "$1" "${2:-}"
             NAVLOG_FILE="${2:-}"
             shift 2
+            ;;
+        --file=*)
+            NAVLOG_FILE="${1#*=}"
+            [[ -z "$NAVLOG_FILE" ]] && { err "Option --file requires a value"; exit 1; }
+            shift
             ;;
         --action)
             require_value_arg "$1" "${2:-}"
             ACTION="${2:-}"
             shift 2
             ;;
+        --action=*)
+            ACTION="${1#*=}"
+            [[ -z "$ACTION" ]] && { err "Option --action requires a value"; exit 1; }
+            shift
+            ;;
         --url)
             require_value_arg "$1" "${2:-}"
             URL="${2:-}"
             shift 2
+            ;;
+        --url=*)
+            URL="${1#*=}"
+            [[ -z "$URL" ]] && { err "Option --url requires a value"; exit 1; }
+            shift
             ;;
         --title)
             require_value_arg "$1" "${2:-}"
             TITLE="${2:-}"
             shift 2
             ;;
+        --title=*)
+            TITLE="${1#*=}"
+            [[ -z "$TITLE" ]] && { err "Option --title requires a value"; exit 1; }
+            shift
+            ;;
         --selector)
             require_value_arg "$1" "${2:-}"
             SELECTOR="${2:-}"
             shift 2
+            ;;
+        --selector=*)
+            SELECTOR="${1#*=}"
+            [[ -z "$SELECTOR" ]] && { err "Option --selector requires a value"; exit 1; }
+            shift
             ;;
         --value)
             require_value_arg "$1" "${2:-}"
             VALUE="${2:-}"
             shift 2
             ;;
+        --value=*)
+            VALUE="${1#*=}"
+            [[ -z "$VALUE" ]] && { err "Option --value requires a value"; exit 1; }
+            shift
+            ;;
         --note)
             require_value_arg "$1" "${2:-}"
             NOTE="${2:-}"
             shift 2
             ;;
+        --note=*)
+            NOTE="${1#*=}"
+            [[ -z "$NOTE" ]] && { err "Option --note requires a value"; exit 1; }
+            shift
+            ;;
         --duration)
             require_value_arg "$1" "${2:-}"
             DURATION="${2:-}"
             shift 2
+            ;;
+        --duration=*)
+            DURATION="${1#*=}"
+            [[ -z "$DURATION" ]] && { err "Option --duration requires a value"; exit 1; }
+            shift
             ;;
         -h|--help)
             usage

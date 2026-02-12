@@ -52,22 +52,36 @@ which mitmdump && mitmdump --version
 python3 -c "from mitmproxy import io; print('OK')"
 ```
 
-## Execution Contract (Playwright Required)
+## Execution Contract (Task-Adaptive Traffic Generation)
 
-When the user asks to capture live traffic from a URL, the AI MUST execute browser automation instead of stopping at start/stop scripts.
+When the user asks to capture live traffic, the AI MUST choose execution mode by task type (not one fixed method):
 
-Required minimum actions (unless user explicitly chooses manual mode):
+- **Browser mode**: web page/user-journey exploration via Playwright MCP.
+- **Program mode**: run target process with temporary proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`).
+- **Manual-assist mode**: user drives app manually while capture is running.
+
+Required minimum actions:
 
 1. Start capture (`capture-session.sh start ...`)
-2. Execute Playwright MCP actions (`browser_navigate` + `browser_snapshot`)
-3. Trigger at least one network-producing interaction (`browser_click` or `browser_fill_form` + submit)
+2. Choose ONE traffic-generation mode above
+3. Ensure at least one network-producing action/request happens
 4. Stop capture (`capture-session.sh stop`)
 5. Verify artifacts are non-empty (`latest.flow` size > 0, `latest.index.ndjson` lines > 0)
 
-If Playwright MCP is unavailable, the AI MUST:
-- State explicitly that Playwright automation is unavailable
-- Run a proxy smoke test to generate traffic (`curl -x http://127.0.0.1:<port> http://example.com/`)
-- Continue with analysis and clearly label result as fallback/manual-assist mode
+### Browser Mode Reliability Rules (Headless-First)
+
+If browser automation is selected, the AI MUST:
+
+1. Prefer headless execution in non-GUI environments
+2. If Playwright fails with XServer/headed error, retry once in headless mode
+3. If browser mode is still unavailable, switch to program mode or manual-assist mode
+4. Never abort capture workflow after one Playwright launch failure
+
+If selected mode is unavailable, the AI MUST:
+- State explicitly which mode is unavailable and why
+- Switch to the next-best mode
+- Run proxy smoke test when needed (`curl -x http://127.0.0.1:<port> http://example.com/`)
+- Continue with analysis and clearly label fallback mode in the report
 
 ## Five-Phase Workflow
 
@@ -124,15 +138,37 @@ This prevents capturing traffic from unrelated domains (e.g., analytics, auth pr
 
 After starting, the proxy is at `127.0.0.1:18080`.
 
-### Phase 3: EXPLORE (Browser Automation)
+### Phase 3: EXPLORE / DRIVE TRAFFIC (Mode-Based)
 
-Connect Playwright to browse **through the proxy**.
+Choose the traffic-driving mode based on the target:
 
-**Setup proxy in Playwright:**
-The AI MUST use `browser_navigate` and other Playwright MCP tools while
-the system proxy or browser proxy is configured to route through mitmproxy.
+- **Browser workflow (web pages):** use Playwright through proxy.
+- **Program workflow (CLI/service/mobile bridge):** launch program with proxy env vars.
 
-**Exploration Strategies** (see [BROWSER_EXPLORATION.md](references/BROWSER_EXPLORATION.md)):
+**Browser mode (Playwright):**
+- Default to headless in non-GUI environments.
+- If you see XServer/headed launch failure, retry once with headless.
+- Use `browser_navigate` + `browser_snapshot` + interaction actions to produce traffic.
+
+**Program mode (environment variables):**
+Use temporary env vars when starting the target process:
+
+```bash
+HTTP_PROXY=http://127.0.0.1:18080 \
+HTTPS_PROXY=http://127.0.0.1:18080 \
+ALL_PROXY=http://127.0.0.1:18080 \
+<your_program_command>
+```
+
+Or use helper script:
+
+```bash
+./scripts/runWithProxyEnv.sh -P 18080 -- <your_program_command>
+```
+
+Use `NO_PROXY` where necessary to bypass local endpoints.
+
+**Exploration/Driving Strategies** (see [BROWSER_EXPLORATION.md](references/BROWSER_EXPLORATION.md)):
 
 | Strategy | When | Actions |
 |----------|------|---------|
@@ -229,7 +265,7 @@ See [ANALYSIS_PATTERNS.md](references/ANALYSIS_PATTERNS.md) for detailed strateg
 
 ### One-shot Analysis
 User: "帮我分析 https://example.com 的网络请求"
-→ AI runs all 5 phases automatically, including mandatory Playwright exploration
+→ AI runs all 5 phases automatically and selects browser/program/manual mode by task
 
 ### Manual Capture Mode
 User: "开始抓包，我自己操作浏览器"
@@ -259,6 +295,12 @@ Verify environment prerequisites before capture.
 ./install.sh --doctor
 ```
 Use this to diagnose runtime dependencies and current skill installation mode.
+
+### Program Mode Helper
+```bash
+./scripts/runWithProxyEnv.sh -P 18080 -- <your_program_command>
+```
+Use this when traffic is produced by CLI/service process rather than browser automation.
 
 ### Localhost Start Example
 ```bash
@@ -342,6 +384,7 @@ fafafa-skills-capture-analytics/
 │   ├── policy.py                      # Scope policy validator
 │   ├── proxy_utils.sh                 # Proxy utility helpers
 │   ├── release-check.sh               # Release verification helper
+│   ├── runWithProxyEnv.sh             # Run command with proxy env (program mode)
 │   ├── scope_audit.py                 # Scope audit report generator
 │   ├── cleanupCaptures.sh             # Capture retention cleanup
 │   ├── navlog.sh                      # Navigation log helper

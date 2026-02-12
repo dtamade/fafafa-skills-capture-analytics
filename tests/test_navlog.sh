@@ -237,6 +237,29 @@ test_resolve_from_env() {
     rm -rf "$tmpdir"
 }
 
+# ── Test 11: Append supports --key=value shorthand ─────────────────
+
+test_append_equals_syntax() {
+    local tmpfile
+    tmpfile="$(mktemp /tmp/navlog_test.XXXXXX.ndjson)"
+
+    local output
+    output="$($NAVLOG_SCRIPT append -f "$tmpfile" --action=navigate --url=https://example.com --title=Home 2>&1)"
+
+    local action url title
+    action="$(echo "$output" | python3 -c "import sys,json; print(json.load(sys.stdin).get('action'))")"
+    url="$(echo "$output" | python3 -c "import sys,json; print(json.load(sys.stdin).get('url'))")"
+    title="$(echo "$output" | python3 -c "import sys,json; print(json.load(sys.stdin).get('title'))")"
+
+    if [[ "$action" == "navigate" && "$url" == "https://example.com" && "$title" == "Home" ]]; then
+        report "test_append_equals_syntax" "pass"
+    else
+        report "test_append_equals_syntax" "fail"
+    fi
+
+    rm -f "$tmpfile"
+}
+
 # ── Run all tests ───────────────────────────────────────────────────
 
 echo "Running navlog module tests..."
@@ -252,6 +275,7 @@ test_append_requires_input
 test_auto_timestamp
 test_valid_ndjson
 test_resolve_from_env
+test_append_equals_syntax
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed (total $((PASS + FAIL)))"

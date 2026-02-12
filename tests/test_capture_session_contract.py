@@ -219,3 +219,28 @@ def test_install_script_replaces_symlink_with_copy_contract() -> None:
     assert 'replaced symlink' in script, (
         "install.sh should explicitly replace symlink with local copy"
     )
+
+
+def test_doctor_script_headed_runtime_hint_contract() -> None:
+    script = _read("scripts/doctor.sh")
+
+    assert "headed-ui" in script, (
+        "doctor.sh should include headed UI runtime diagnostics"
+    )
+    assert "Headed Playwright may fail. Use headless or install xvfb-run" in script, (
+        "doctor.sh should explain headed Playwright fallback"
+    )
+
+
+def test_run_with_proxy_env_helper_contract() -> None:
+    script = _read("scripts/runWithProxyEnv.sh")
+
+    assert "HTTP_PROXY" in script and "HTTPS_PROXY" in script, (
+        "runWithProxyEnv.sh should set proxy env variables"
+    )
+    assert "ALL_PROXY" in script, (
+        "runWithProxyEnv.sh should support ALL_PROXY"
+    )
+    assert "--no-proxy" in script and "--print-env" in script, (
+        "runWithProxyEnv.sh should expose operational diagnostics flags"
+    )

@@ -156,6 +156,19 @@ Claude 会：
 ./scripts/capture-session.sh stop
 ```
 
+### 程序模式（非浏览器流量）
+
+```bash
+# 启动抓包
+./scripts/capture-session.sh start https://example.com
+
+# 用临时代理环境变量启动目标程序
+./scripts/runWithProxyEnv.sh -P 18080 -- <your_program_command>
+
+# 停止并分析
+./scripts/capture-session.sh stop
+```
+
 ### 范围控制
 
 ```bash
@@ -177,6 +190,8 @@ capture-session.sh start https://example.com -P 28080
 ### Navlog 示例
 
 ```bash
+capture-session.sh navlog append --action navigate --url "https://example.com"
+# Alternative equals syntax (more robust in some shells)
 capture-session.sh navlog append --action navigate --url "https://example.com"
 ```
 
@@ -265,6 +280,7 @@ capture-session.sh cleanup --secure --keep-days 3
 | `Port is already in use: 18080` | 另一个抓包正在运行 | `capture-session.sh stop` 或使用 `-P <port>` |
 | `Found stale state file` | 上次抓包异常退出 | `capture-session.sh start https://example.com --force-recover` |
 | HAR 状态: `failed` | mitmdump HAR 导出错误 | 尝试 `--har-backend python` |
+| `Looks like you launched a headed browser without having a XServer running` | 非图形环境下使用有头 Playwright | 改用 headless 或 `xvfb-run`，并可回退到程序模式助手 |
 
 ## 项目结构
 
@@ -282,6 +298,7 @@ capture-analytics/
 │   ├── doctor.sh               # 环境诊断
 │   ├── cleanupCaptures.sh      # 抓包保留与清理
 │   ├── navlog.sh               # 导航日志助手
+│   ├── runWithProxyEnv.sh      # 以临时代理环境变量运行命令
 │   ├── diff_captures.py        # 抓包索引差异对比
 │   ├── policy.py               # 范围策略辅助工具
 │   ├── analyzeLatest.sh        # 生成最新分析产物

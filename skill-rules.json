@@ -46,7 +46,15 @@
         "browse website for requests",
         "浏览器自动化",
         "页面探索",
-        "自动浏览抓包"
+        "自动浏览抓包",
+        "环境变量抓包",
+        "代理环境变量",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "program mode",
+        "cli traffic capture",
+        "非浏览器抓包"
       ],
       "intentPatterns": [
         "(抓包|捕获|拦截).*?(流量|请求|HTTP|网络|API)",
