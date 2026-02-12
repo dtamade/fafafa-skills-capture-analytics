@@ -244,3 +244,28 @@ def test_run_with_proxy_env_helper_contract() -> None:
     assert "--no-proxy" in script and "--print-env" in script, (
         "runWithProxyEnv.sh should expose operational diagnostics flags"
     )
+
+
+def test_drive_browser_traffic_helper_contract() -> None:
+    script = _read("scripts/driveBrowserTraffic.sh")
+
+    assert "--url <url>" in script, (
+        "driveBrowserTraffic.sh should require target URL"
+    )
+    assert "--mode <mode>" in script, (
+        "driveBrowserTraffic.sh should expose mode selection"
+    )
+    assert "--no-fallback-headless" in script, (
+        "driveBrowserTraffic.sh should allow disabling headless fallback"
+    )
+    assert "mode_order" in script and "likely_headed_runtime_error" in script, (
+        "driveBrowserTraffic.sh should implement headed/headless fallback logic"
+    )
+
+
+def test_capture_session_help_mentions_browser_fallback_helper() -> None:
+    script = _read("scripts/capture-session.sh")
+
+    assert "driveBrowserTraffic.sh --url https://example.com -P 18080" in script, (
+        "capture-session.sh help should mention browser fallback helper"
+    )

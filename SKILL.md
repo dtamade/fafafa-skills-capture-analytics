@@ -302,6 +302,12 @@ Use this to diagnose runtime dependencies and current skill installation mode.
 ```
 Use this when traffic is produced by CLI/service process rather than browser automation.
 
+### Browser Fallback Helper
+```bash
+./scripts/driveBrowserTraffic.sh --url https://example.com -P 18080 --mode auto
+```
+Use this when you want one-shot headed/headless fallback browser traffic generation.
+
 ### Localhost Start Example
 ```bash
 capture-session.sh start http://localhost:3000

@@ -60,11 +60,12 @@ Examples:
   capture-session.sh cleanup --secure --keep-days 3
   capture-session.sh diff captures/a.index.ndjson captures/b.index.ndjson
   capture-session.sh navlog append --action navigate --url "https://example.com"
+  driveBrowserTraffic.sh --url https://example.com -P 18080
 
 For AI Automation:
   1. AI calls: capture-session.sh doctor (verify environment)
   2. AI calls: capture-session.sh start <url>
-  3. AI uses Playwright with proxy 127.0.0.1:18080
+  3. AI uses Playwright with proxy 127.0.0.1:18080 (fallback: driveBrowserTraffic.sh)
   4. AI calls: capture-session.sh progress (optional, check status)
   5. AI calls: capture-session.sh stop
   6. AI reads: captures/latest.ai.json

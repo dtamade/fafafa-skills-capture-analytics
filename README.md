@@ -169,6 +169,19 @@ The skill intelligently extracts information from your request:
 ./scripts/capture-session.sh stop
 ```
 
+### Browser Fallback Helper
+
+```bash
+# Start capture
+./scripts/capture-session.sh start https://example.com
+
+# One-shot browser traffic with headed/headless fallback
+./scripts/driveBrowserTraffic.sh --url https://example.com -P 18080 --mode auto
+
+# Stop and analyze
+./scripts/capture-session.sh stop
+```
+
 ### With Scope Control
 
 ```bash
@@ -191,6 +204,8 @@ capture-session.sh start https://example.com -P 28080
 
 ```bash
 capture-session.sh navlog append --action navigate --url "https://example.com"
+# Alternative equals syntax
+capture-session.sh navlog append --action=navigate --url=https://example.com
 # Alternative equals syntax (more robust in some shells)
 capture-session.sh navlog append --action navigate --url "https://example.com"
 ```
@@ -280,7 +295,7 @@ Phase 5: ANALYZE    → Read outputs, generate report
 | `Port is already in use: 18080` | Another capture running | `capture-session.sh stop` or use `-P <port>` |
 | `Found stale state file` | Previous capture crashed | `capture-session.sh start https://example.com --force-recover` |
 | HAR status: `failed` | mitmdump HAR export error | Try `--har-backend python` |
-| `Looks like you launched a headed browser without having a XServer running` | Headed Playwright in non-GUI environment | Retry in headless mode or run with `xvfb-run`; fallback to program mode helper |
+| `Looks like you launched a headed browser without having a XServer running` | Headed Playwright in non-GUI environment | Retry in headless mode or run with `xvfb-run`; or use `driveBrowserTraffic.sh --mode auto` |
 
 ## Project Structure
 

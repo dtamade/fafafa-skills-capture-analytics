@@ -49,6 +49,7 @@ Run:
 ./scripts/capture-session.sh status
 ./scripts/capture-session.sh progress
 ./scripts/capture-session.sh navlog append --action navigate --url "https://example.com"
+./scripts/driveBrowserTraffic.sh --url https://example.com -P 18080 --mode auto
 ./scripts/capture-session.sh stop
 ./scripts/capture-session.sh analyze
 ./scripts/capture-session.sh cleanup --keep-days 7
