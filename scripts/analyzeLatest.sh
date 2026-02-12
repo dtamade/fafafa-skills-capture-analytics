@@ -9,7 +9,7 @@ Usage:
   ./analyzeLatest.sh [options]
 
 Options:
-  -d, --dir <path>      Target directory (default: current dir)
+  -d, --dir <path>      Target directory (default: project root)
   -o, --out <path>      Output file path (default: captures/latest.ai.bundle.txt)
       --stdout          Print bundle to stdout after writing
   -h, --help            Show help
@@ -22,12 +22,13 @@ EOF
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Shared utilities (err, require_value_arg, etc.)
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 
-TARGET_DIR="$(pwd)"
+TARGET_DIR="$ROOT_DIR"
 OUT_FILE=""
 PRINT_STDOUT=false
 

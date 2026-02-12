@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# startCaptures.sh - Start mitmproxy capture in current directory
+# startCaptures.sh - Start mitmproxy capture in project directory
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 usage() {
     cat <<'EOF'
@@ -14,7 +15,7 @@ Options:
   -p, --program             Program mode (do not modify system proxy)
   -H, --host <host>         Listen host (default: 127.0.0.1)
   -P, --port <port>         Listen port (default: 18080)
-  -d, --dir <path>          Target directory to store captures (default: current dir)
+  -d, --dir <path>          Target directory to store captures (default: project root)
       --allow-hosts <list>  Comma-separated allowed hosts (supports wildcards)
       --deny-hosts <list>   Comma-separated denied hosts (supports wildcards)
       --policy <file>       Policy JSON file for scope control
@@ -65,7 +66,7 @@ source "$SCRIPT_DIR/proxy_utils.sh"
 PROGRAM_MODE=false
 LISTEN_HOST="127.0.0.1"
 LISTEN_PORT="18080"
-TARGET_DIR="$(pwd)"
+TARGET_DIR="$ROOT_DIR"
 FORCE_RECOVER=false
 ALLOW_HOSTS=""
 DENY_HOSTS=""

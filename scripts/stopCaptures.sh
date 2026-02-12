@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# stopCaptures.sh - Stop mitmproxy capture in current directory
+# stopCaptures.sh - Stop mitmproxy capture in project directory
 # INTERNAL: Prefer capture-session.sh stop for consistent workflow.
 
 set -euo pipefail
@@ -10,7 +10,7 @@ Usage:
   ./stopCaptures.sh [options]
 
 Options:
-  -d, --dir <path>          Target directory (default: current dir)
+  -d, --dir <path>          Target directory (default: project root)
       --keep-env            Keep proxy_info.env for debugging
       --har-backend <name>  HAR backend: auto|mitmdump|python (default: auto)
       --no-har              Skip HAR conversion
@@ -25,6 +25,7 @@ EOF
 
 # Cross-platform proxy management
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Shared utilities (err, warn, require_value_arg, etc.)
 # shellcheck source=common.sh
@@ -85,7 +86,7 @@ har_convert_with_python() {
     python3 "$script_dir/flow2har.py" "$flow_file" "$har_file" 9>&- >/dev/null 2>&1
 }
 
-TARGET_DIR="$(pwd)"
+TARGET_DIR="$ROOT_DIR"
 KEEP_ENV=false
 HAR_BACKEND="auto"
 DO_HAR=true

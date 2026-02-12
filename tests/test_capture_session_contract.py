@@ -93,3 +93,48 @@ def test_capture_session_cleanup_flags_forwarding_contract() -> None:
     assert "CLEANUP_CMD+=(--dry-run)" in script, (
         "capture-session.sh cleanup command does not forward --dry-run"
     )
+
+
+
+def test_capture_session_default_work_dir_is_project_root() -> None:
+    script = _read("scripts/capture-session.sh")
+
+    assert 'ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"' in script, (
+        "capture-session.sh missing ROOT_DIR resolution"
+    )
+    assert 'WORK_DIR="$ROOT_DIR"' in script, (
+        "capture-session.sh should default WORK_DIR to project root"
+    )
+
+
+def test_start_captures_default_target_dir_is_project_root() -> None:
+    script = _read("scripts/startCaptures.sh")
+
+    assert 'ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"' in script, (
+        "startCaptures.sh missing ROOT_DIR resolution"
+    )
+    assert 'TARGET_DIR="$ROOT_DIR"' in script, (
+        "startCaptures.sh should default TARGET_DIR to project root"
+    )
+
+
+def test_stop_captures_default_target_dir_is_project_root() -> None:
+    script = _read("scripts/stopCaptures.sh")
+
+    assert 'ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"' in script, (
+        "stopCaptures.sh missing ROOT_DIR resolution"
+    )
+    assert 'TARGET_DIR="$ROOT_DIR"' in script, (
+        "stopCaptures.sh should default TARGET_DIR to project root"
+    )
+
+
+def test_analyze_latest_default_target_dir_is_project_root() -> None:
+    script = _read("scripts/analyzeLatest.sh")
+
+    assert 'ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"' in script, (
+        "analyzeLatest.sh missing ROOT_DIR resolution"
+    )
+    assert 'TARGET_DIR="$ROOT_DIR"' in script, (
+        "analyzeLatest.sh should default TARGET_DIR to project root"
+    )
