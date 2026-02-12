@@ -68,6 +68,18 @@ Required minimum actions:
 4. Stop capture (`capture-session.sh stop`)
 5. Verify artifacts are non-empty (`latest.flow` size > 0, `latest.index.ndjson` lines > 0)
 
+### Capture Decision Gate (Session/Cookie/Header Aware)
+
+Before starting capture, the AI MUST classify the task:
+
+- **No capture needed**: user already has exact request details (URL/method/headers/body/cookies) and only needs direct API replay/response check.
+- **Capture required**: request chain/session bootstrap is unknown, or flow depends on dynamic cookies/CSRF/OAuth redirects/browser state.
+
+Rules:
+- Do not use curl smoke test as a substitute for real session workflows.
+- Use smoke test only to verify proxy connectivity/path.
+- For auth/session scenarios, generate traffic from the real client context (browser/app/program), then capture/analyze.
+
 ### Browser Mode Reliability Rules (Headless-First)
 
 If browser automation is selected, the AI MUST:
@@ -142,8 +154,8 @@ After starting, the proxy is at `127.0.0.1:18080`.
 
 Choose the traffic-driving mode based on the target:
 
-- **Browser workflow (web pages):** use Playwright through proxy.
-- **Program workflow (CLI/service/mobile bridge):** launch program with proxy env vars.
+- **Browser workflow (web pages/session flows):** use Playwright through proxy.
+- **Program workflow (CLI/service/mobile bridge/API clients):** launch program with proxy env vars.
 
 **Browser mode (Playwright):**
 - Default to headless in non-GUI environments.
@@ -408,6 +420,6 @@ fafafa-skills-capture-analytics/
 | Port 18080 already in use | Use `-P <other-port>` flag or stop existing process |
 | Playwright can't connect through proxy | Ensure mitmproxy CA cert is trusted, or use `--ignore-https-errors` |
 | HAR conversion fails | Script falls back to Python converter automatically |
-| Empty capture (0 requests) | Check proxy routing — Playwright must be configured to use the proxy |
+| Empty capture (0 requests) | Check proxy routing — use real browser/program traffic through proxy; smoke curl is connectivity-only |
 | Found stale state file | Restart with `capture-session.sh start https://example.com --force-recover` |
 | Permission denied on scripts | Run `chmod +x scripts/*.sh` |

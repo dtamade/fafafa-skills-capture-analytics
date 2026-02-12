@@ -144,6 +144,12 @@ The skill intelligently extracts information from your request:
 | "抓包 localhost:3000" | URL=https://localhost:3000 |
 | "分析 192.168.1.1 的请求" | URL=https://192.168.1.1 |
 
+### Session/Cookie-Aware Decision Guide
+
+- **Skip capture** when you already have full request details and only need direct API replay.
+- **Use capture** when session state/cookies/CSRF/OAuth redirects or hidden request chains are unknown.
+- `curl` smoke tests are for **proxy connectivity only**, not for reproducing authenticated browser workflows.
+
 ### Manual Mode
 
 ```bash
@@ -294,6 +300,7 @@ Phase 5: ANALYZE    → Read outputs, generate report
 | `Found stale state file` | Previous capture crashed | `capture-session.sh start https://example.com --force-recover` |
 | HAR status: `failed` | mitmdump HAR export error | Try `--har-backend python` |
 | `Looks like you launched a headed browser without having a XServer running` | Headed Playwright in non-GUI environment | Retry in headless mode or run with `xvfb-run`; or use `driveBrowserTraffic.sh --mode auto` |
+| Capture contains only smoke curl request | Connectivity check ran, but real session/app flow did not | Generate traffic from real browser/program context (cookies/headers/session state) |
 
 ## Project Structure
 

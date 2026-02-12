@@ -52,6 +52,9 @@ def test_should_trigger():
         # TLS
         'tls 握手分析',
         'ssl 分析',
+        # Session/cookie/header aware triggers
+        '抓包分析 session cookie 流程',
+        'debug oauth redirect traffic capture',
     ]
 
     passed = 0
@@ -219,11 +222,12 @@ def test_multimode_enforcement_contract() -> None:
     required = [
         'playwright',
         'browser automation',
-        '浏览器自动化',
         'HTTP_PROXY',
         'ALL_PROXY',
         'program mode',
         '环境变量抓包',
+        'session cookie',
+        'cookie header',
     ]
     for token in required:
         assert token in keywords, f'missing multimode trigger keyword: {token}'

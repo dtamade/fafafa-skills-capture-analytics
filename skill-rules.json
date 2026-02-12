@@ -54,7 +54,15 @@
         "ALL_PROXY",
         "program mode",
         "cli traffic capture",
-        "非浏览器抓包"
+        "非浏览器抓包",
+        "session cookie",
+        "cookie header",
+        "csrf token",
+        "oauth redirect",
+        "授权跳转",
+        "会话保持",
+        "cookie会话",
+        "header签名"
       ],
       "intentPatterns": [
         "(抓包|捕获|拦截).*?(流量|请求|HTTP|网络|API)",
@@ -70,7 +78,9 @@
         "(slow|error|failed|timeout).*?(request|response|API).*?(debug|分析|查看)",
         "(请求|响应|接口).*?(慢|超时|错误|失败).*?(分析|调试|排查)",
         "(websocket|\\bws\\b).*?(流量|消息|分析|capture|debug|调试)",
-        "(tls|ssl|https).*?(握手|handshake|分析)"
+        "(tls|ssl|https).*?(握手|handshake|分析)",
+        "(session|cookie|csrf|oauth|token).*?(capture|traffic|抓包|分析)",
+        "(会话|cookie|csrf|oauth|header).*?(抓包|捕获|分析)"
       ]
     },
     "fileTriggers": {

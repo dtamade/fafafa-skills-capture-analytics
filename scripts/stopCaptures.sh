@@ -531,7 +531,10 @@ if [[ "$REPORT_STATUS" == "no-flow" ]]; then
     echo ""
     echo " [!] No traffic captured (flow file is empty)."
     echo "     Traffic must pass through proxy ${LISTEN_HOST:-127.0.0.1}:${LISTEN_PORT:-18080}."
-    echo "     Smoke test: curl -x http://${LISTEN_HOST:-127.0.0.1}:${LISTEN_PORT:-18080} http://example.com/"
+    echo "     Connectivity smoke test (proxy path only):"
+    echo "       curl -x http://${LISTEN_HOST:-127.0.0.1}:${LISTEN_PORT:-18080} http://example.com/"
+    echo "     Note: smoke test does NOT reproduce session/cookie/header workflows."
+    echo "     For auth/session scenarios, generate real app traffic via browser/program flow."
     echo "     If using HTTPS, trust mitmproxy CA cert or allow insecure certs in your client."
 fi
 echo ""

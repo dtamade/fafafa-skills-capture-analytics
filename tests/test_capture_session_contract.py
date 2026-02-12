@@ -156,17 +156,20 @@ def test_capture_scripts_include_no_flow_diagnostics_contract() -> None:
     capture_script = _read("scripts/capture-session.sh")
     stop_script = _read("scripts/stopCaptures.sh")
 
-    assert "Smoke test (must produce traffic through proxy)" in capture_script, (
-        "capture-session.sh should print proxy smoke-test guidance after start"
+    assert "Session/cookie/header workflows -> Playwright or manual-assist" in capture_script, (
+        "capture-session.sh should emphasize real session workflow mode selection"
+    )
+    assert "Optional connectivity-only smoke test" in capture_script, (
+        "capture-session.sh should mark curl smoke test as optional connectivity check"
     )
     assert "curl -x http://127.0.0.1:$PROXY_PORT http://example.com/" in capture_script, (
-        "capture-session.sh should show explicit proxy traffic example"
+        "capture-session.sh should keep explicit proxy connectivity example"
     )
     assert "No traffic captured (flow file is empty)." in stop_script, (
         "stopCaptures.sh should explain empty flow condition"
     )
-    assert "Traffic must pass through proxy" in stop_script, (
-        "stopCaptures.sh should include proxy-routing hint when no flow"
+    assert "smoke test does NOT reproduce session/cookie/header workflows" in stop_script, (
+        "stopCaptures.sh should clarify smoke-test limitation for session scenarios"
     )
 
 

@@ -678,3 +678,21 @@ def test_readmes_troubleshooting_include_xserver_fallback_helper() -> None:
     assert "driveBrowserTraffic.sh --mode auto" in readme_cn, (
         "README_CN.md troubleshooting should reference driveBrowserTraffic fallback"
     )
+
+
+def test_readmes_include_session_cookie_decision_guide() -> None:
+    readme_en = _read("README.md")
+    readme_cn = _read("README_CN.md")
+
+    assert "Session/Cookie-Aware Decision Guide" in readme_en
+    assert "会话/Cookie 场景决策" in readme_cn
+
+
+def test_skill_and_scripts_clarify_smoke_test_is_connectivity_only() -> None:
+    skill_doc = _read("SKILL.md")
+    capture_script = _read("scripts/capture-session.sh")
+    stop_script = _read("scripts/stopCaptures.sh")
+
+    assert "Do not use curl smoke test as a substitute for real session workflows." in skill_doc
+    assert "Optional connectivity-only smoke test" in capture_script
+    assert "smoke test does NOT reproduce session/cookie/header workflows" in stop_script

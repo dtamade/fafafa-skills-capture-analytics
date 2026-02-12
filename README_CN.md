@@ -144,6 +144,12 @@ Claude 会：
 | "抓包 localhost:3000" | URL=https://localhost:3000 |
 | "看看 192.168.1.1 的请求" | URL=https://192.168.1.1 |
 
+### 会话/Cookie 场景决策
+
+- **可跳过抓包**：你已掌握完整请求（URL/方法/headers/body/cookies），只需直连重放。
+- **必须抓包**：会话状态、cookie、CSRF、OAuth 跳转或隐藏请求链路未知。
+- `curl` 烟雾测试仅用于**代理连通性验证**，不能替代真实登录/会话业务链路。
+
 ### 手动模式
 
 ```bash
@@ -294,6 +300,7 @@ capture-session.sh cleanup --secure --keep-days 3
 | `Found stale state file` | 上次抓包异常退出 | `capture-session.sh start https://example.com --force-recover` |
 | HAR 状态: `failed` | mitmdump HAR 导出错误 | 尝试 `--har-backend python` |
 | `Looks like you launched a headed browser without having a XServer running` | 非图形环境下使用有头 Playwright | 改用 headless 或 `xvfb-run`，或使用 `driveBrowserTraffic.sh --mode auto` |
+| 抓包结果只有 curl 烟雾请求 | 只验证了代理连通性，未跑真实会话/业务流 | 从真实浏览器/程序上下文产生流量（含 cookies/headers/session） |
 
 ## 项目结构
 

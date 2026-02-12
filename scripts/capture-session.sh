@@ -65,7 +65,9 @@ Examples:
 For AI Automation:
   1. AI calls: capture-session.sh doctor (verify environment)
   2. AI calls: capture-session.sh start <url>
-  3. AI uses Playwright with proxy 127.0.0.1:18080 (fallback: driveBrowserTraffic.sh)
+  3. AI chooses traffic mode by task:
+       - Browser/session flows: Playwright (fallback: driveBrowserTraffic.sh)
+       - Program/API client flows: runWithProxyEnv.sh with HTTP_PROXY/HTTPS_PROXY
   4. AI calls: capture-session.sh progress (optional, check status)
   5. AI calls: capture-session.sh stop
   6. AI reads: captures/latest.ai.json
@@ -224,12 +226,13 @@ case "$COMMAND" in
 
         echo ""
         echo "=== Next Steps for AI ==="
-        echo "1. Configure Playwright to use proxy: 127.0.0.1:$PROXY_PORT"
-        echo "2. Navigate to: $TARGET_URL"
-        echo "3. Explore the site as needed"
-        echo "4. Smoke test (must produce traffic through proxy):"
+        echo "1. Choose traffic mode by task:"
+        echo "   - Session/cookie/header workflows -> Playwright or manual-assist"
+        echo "   - CLI/program traffic -> runWithProxyEnv.sh with proxy env vars"
+        echo "2. Produce real target traffic for $TARGET_URL (not just connectivity ping)"
+        echo "3. Optional connectivity-only smoke test (debug proxy path only):"
         echo "   curl -x http://127.0.0.1:$PROXY_PORT http://example.com/"
-        echo "5. Run: capture-session.sh stop -d $WORK_DIR"
+        echo "4. Run: capture-session.sh stop -d $WORK_DIR"
         ;;
 
     stop)
