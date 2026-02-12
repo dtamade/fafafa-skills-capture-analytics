@@ -5,7 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEFAULT_BASE_DIR="$(pwd)"
+if command -v git >/dev/null 2>&1; then
+    GIT_TOPLEVEL="$(git -C "$DEFAULT_BASE_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+    if [[ -n "$GIT_TOPLEVEL" ]]; then
+        DEFAULT_BASE_DIR="$GIT_TOPLEVEL"
+    fi
+fi
 
 usage() {
     cat <<'EOF'
@@ -24,7 +30,7 @@ Commands:
   navlog <cmd>        Manage navigation log (init/append/show)
 
 Options:
-  -d, --dir <path>       Working directory (default: project root)
+  -d, --dir <path>       Working directory (default: current project root)
   -P, --port <port>      Proxy port (default: 18080)
   --allow-hosts <list>   Comma-separated allowed hosts
   --deny-hosts <list>    Comma-separated denied hosts
@@ -81,7 +87,7 @@ done
 
 COMMAND=""
 TARGET_URL=""
-WORK_DIR="$ROOT_DIR"
+WORK_DIR="$DEFAULT_BASE_DIR"
 PROXY_PORT="18080"
 ALLOW_HOSTS=""
 DENY_HOSTS=""

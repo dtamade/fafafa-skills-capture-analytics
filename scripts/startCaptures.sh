@@ -4,7 +4,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEFAULT_BASE_DIR="$(pwd)"
+if command -v git >/dev/null 2>&1; then
+    GIT_TOPLEVEL="$(git -C "$DEFAULT_BASE_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+    if [[ -n "$GIT_TOPLEVEL" ]]; then
+        DEFAULT_BASE_DIR="$GIT_TOPLEVEL"
+    fi
+fi
 
 usage() {
     cat <<'EOF'
@@ -15,7 +21,7 @@ Options:
   -p, --program             Program mode (do not modify system proxy)
   -H, --host <host>         Listen host (default: 127.0.0.1)
   -P, --port <port>         Listen port (default: 18080)
-  -d, --dir <path>          Target directory to store captures (default: project root)
+  -d, --dir <path>          Target directory to store captures (default: current project root)
       --allow-hosts <list>  Comma-separated allowed hosts (supports wildcards)
       --deny-hosts <list>   Comma-separated denied hosts (supports wildcards)
       --policy <file>       Policy JSON file for scope control
@@ -66,7 +72,7 @@ source "$SCRIPT_DIR/proxy_utils.sh"
 PROGRAM_MODE=false
 LISTEN_HOST="127.0.0.1"
 LISTEN_PORT="18080"
-TARGET_DIR="$ROOT_DIR"
+TARGET_DIR="$DEFAULT_BASE_DIR"
 FORCE_RECOVER=false
 ALLOW_HOSTS=""
 DENY_HOSTS=""

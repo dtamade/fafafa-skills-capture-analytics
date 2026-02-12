@@ -99,42 +99,54 @@ def test_capture_session_cleanup_flags_forwarding_contract() -> None:
 def test_capture_session_default_work_dir_is_project_root() -> None:
     script = _read("scripts/capture-session.sh")
 
-    assert 'ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"' in script, (
-        "capture-session.sh missing ROOT_DIR resolution"
+    assert 'DEFAULT_BASE_DIR="$(pwd)"' in script, (
+        "capture-session.sh missing caller directory default"
     )
-    assert 'WORK_DIR="$ROOT_DIR"' in script, (
-        "capture-session.sh should default WORK_DIR to project root"
+    assert 'git -C "$DEFAULT_BASE_DIR" rev-parse --show-toplevel' in script, (
+        "capture-session.sh should resolve current git project root"
+    )
+    assert 'WORK_DIR="$DEFAULT_BASE_DIR"' in script, (
+        "capture-session.sh should default WORK_DIR to current project root"
     )
 
 
 def test_start_captures_default_target_dir_is_project_root() -> None:
     script = _read("scripts/startCaptures.sh")
 
-    assert 'ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"' in script, (
-        "startCaptures.sh missing ROOT_DIR resolution"
+    assert 'DEFAULT_BASE_DIR="$(pwd)"' in script, (
+        "startCaptures.sh missing caller directory default"
     )
-    assert 'TARGET_DIR="$ROOT_DIR"' in script, (
-        "startCaptures.sh should default TARGET_DIR to project root"
+    assert 'git -C "$DEFAULT_BASE_DIR" rev-parse --show-toplevel' in script, (
+        "startCaptures.sh should resolve current git project root"
+    )
+    assert 'TARGET_DIR="$DEFAULT_BASE_DIR"' in script, (
+        "startCaptures.sh should default TARGET_DIR to current project root"
     )
 
 
 def test_stop_captures_default_target_dir_is_project_root() -> None:
     script = _read("scripts/stopCaptures.sh")
 
-    assert 'ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"' in script, (
-        "stopCaptures.sh missing ROOT_DIR resolution"
+    assert 'DEFAULT_BASE_DIR="$(pwd)"' in script, (
+        "stopCaptures.sh missing caller directory default"
     )
-    assert 'TARGET_DIR="$ROOT_DIR"' in script, (
-        "stopCaptures.sh should default TARGET_DIR to project root"
+    assert 'git -C "$DEFAULT_BASE_DIR" rev-parse --show-toplevel' in script, (
+        "stopCaptures.sh should resolve current git project root"
+    )
+    assert 'TARGET_DIR="$DEFAULT_BASE_DIR"' in script, (
+        "stopCaptures.sh should default TARGET_DIR to current project root"
     )
 
 
 def test_analyze_latest_default_target_dir_is_project_root() -> None:
     script = _read("scripts/analyzeLatest.sh")
 
-    assert 'ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"' in script, (
-        "analyzeLatest.sh missing ROOT_DIR resolution"
+    assert 'DEFAULT_BASE_DIR="$(pwd)"' in script, (
+        "analyzeLatest.sh missing caller directory default"
     )
-    assert 'TARGET_DIR="$ROOT_DIR"' in script, (
-        "analyzeLatest.sh should default TARGET_DIR to project root"
+    assert 'git -C "$DEFAULT_BASE_DIR" rev-parse --show-toplevel' in script, (
+        "analyzeLatest.sh should resolve current git project root"
+    )
+    assert 'TARGET_DIR="$DEFAULT_BASE_DIR"' in script, (
+        "analyzeLatest.sh should default TARGET_DIR to current project root"
     )

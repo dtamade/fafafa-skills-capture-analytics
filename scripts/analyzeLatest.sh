@@ -9,7 +9,7 @@ Usage:
   ./analyzeLatest.sh [options]
 
 Options:
-  -d, --dir <path>      Target directory (default: project root)
+  -d, --dir <path>      Target directory (default: current project root)
   -o, --out <path>      Output file path (default: captures/latest.ai.bundle.txt)
       --stdout          Print bundle to stdout after writing
   -h, --help            Show help
@@ -22,13 +22,19 @@ EOF
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEFAULT_BASE_DIR="$(pwd)"
+if command -v git >/dev/null 2>&1; then
+    GIT_TOPLEVEL="$(git -C "$DEFAULT_BASE_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+    if [[ -n "$GIT_TOPLEVEL" ]]; then
+        DEFAULT_BASE_DIR="$GIT_TOPLEVEL"
+    fi
+fi
 
 # Shared utilities (err, require_value_arg, etc.)
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 
-TARGET_DIR="$ROOT_DIR"
+TARGET_DIR="$DEFAULT_BASE_DIR"
 OUT_FILE=""
 PRINT_STDOUT=false
 
