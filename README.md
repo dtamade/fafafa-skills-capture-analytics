@@ -77,24 +77,34 @@ mitmdump --version
 python3 -c "from mitmproxy.io import FlowReader; print('OK')"
 ```
 
-### Install as User-Level Skill
+### Install as User-Level Skill (Recommended)
 
 ```bash
-# Clone to skills directory
+# Clone repository anywhere
 git clone https://github.com/dtamade/fafafa-skills-capture-analytics.git \
-  ~/.claude/skills/capture-analytics
+  ~/src/fafafa-skills-capture-analytics
+cd ~/src/fafafa-skills-capture-analytics
 
-# Or symlink from existing location
-ln -s /path/to/capture-analytics ~/.claude/skills/capture-analytics
+# Dependency diagnosis
+./install.sh --check
+./install.sh --doctor
+
+# Install skill as LOCAL COPY (default, no external symlink dependency)
+./install.sh --install-to ~/.claude/skills/capture-analytics
+```
+
+Optional (external dependency mode):
+
+```bash
+# Only if you explicitly want linked mode
+./install.sh --symlink --install-to ~/.claude/skills/capture-analytics
 ```
 
 ### Install as Project-Level Skill
 
 ```bash
-# In your project directory
-mkdir -p .claude/skills
-git clone https://github.com/dtamade/fafafa-skills-capture-analytics.git \
-  .claude/skills/capture-analytics
+# Install into project-scoped .claude/skills
+./install.sh --install-to /path/to/your-project/.claude/skills/capture-analytics
 ```
 
 ### Supported Platforms

@@ -168,3 +168,54 @@ def test_capture_scripts_include_no_flow_diagnostics_contract() -> None:
     assert "Traffic must pass through proxy" in stop_script, (
         "stopCaptures.sh should include proxy-routing hint when no flow"
     )
+
+
+def test_install_script_copy_mode_and_doctor_contract() -> None:
+    script = _read("install.sh")
+
+    assert 'SKILL_TARGET_DIR="${HOME}/.claude/skills/capture-analytics"' in script, (
+        "install.sh should default to Claude skill directory target"
+    )
+    assert "INSTALL_SKILL=true" in script, (
+        "install.sh should enable skill installation by default"
+    )
+    assert "LINK_MODE=false" in script, (
+        "install.sh should default to copy install mode"
+    )
+    assert "--install-to" in script and "--symlink" in script, (
+        "install.sh should expose install target and symlink options"
+    )
+    assert "--doctor" in script, (
+        "install.sh should expose dependency diagnostics option"
+    )
+    assert "describe_skill_install_state" in script, (
+        "install.sh should diagnose skill installation state"
+    )
+    assert "copy_skill_tree" in script, (
+        "install.sh should include copy-based skill installation path"
+    )
+
+
+def test_doctor_script_playwright_detection_contract() -> None:
+    script = _read("scripts/doctor.sh")
+
+    assert "playwright skill + plugin detected" in script, (
+        "doctor.sh should report strong Playwright detection when both skill and plugin exist"
+    )
+    assert "Not detected" in script and "playwright-mcp" in script, (
+        "doctor.sh should fail clearly when Playwright MCP is missing"
+    )
+    assert "verify MCP tool permissions" in script, (
+        "doctor.sh should include remediation hint for skipped browser actions"
+    )
+
+
+def test_install_script_replaces_symlink_with_copy_contract() -> None:
+    script = _read("install.sh")
+
+    assert 'if [[ -L "$dst" ]]; then' in script, (
+        "install.sh should detect symlink target in copy mode"
+    )
+    assert 'replaced symlink' in script, (
+        "install.sh should explicitly replace symlink with local copy"
+    )

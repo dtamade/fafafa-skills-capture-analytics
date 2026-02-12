@@ -52,6 +52,23 @@ which mitmdump && mitmdump --version
 python3 -c "from mitmproxy import io; print('OK')"
 ```
 
+## Execution Contract (Playwright Required)
+
+When the user asks to capture live traffic from a URL, the AI MUST execute browser automation instead of stopping at start/stop scripts.
+
+Required minimum actions (unless user explicitly chooses manual mode):
+
+1. Start capture (`capture-session.sh start ...`)
+2. Execute Playwright MCP actions (`browser_navigate` + `browser_snapshot`)
+3. Trigger at least one network-producing interaction (`browser_click` or `browser_fill_form` + submit)
+4. Stop capture (`capture-session.sh stop`)
+5. Verify artifacts are non-empty (`latest.flow` size > 0, `latest.index.ndjson` lines > 0)
+
+If Playwright MCP is unavailable, the AI MUST:
+- State explicitly that Playwright automation is unavailable
+- Run a proxy smoke test to generate traffic (`curl -x http://127.0.0.1:<port> http://example.com/`)
+- Continue with analysis and clearly label result as fallback/manual-assist mode
+
 ## Five-Phase Workflow
 
 ### Phase 1: RECON (Reconnaissance)
@@ -112,7 +129,7 @@ After starting, the proxy is at `127.0.0.1:18080`.
 Connect Playwright to browse **through the proxy**.
 
 **Setup proxy in Playwright:**
-The AI should use `browser_navigate` and other Playwright MCP tools while
+The AI MUST use `browser_navigate` and other Playwright MCP tools while
 the system proxy or browser proxy is configured to route through mitmproxy.
 
 **Exploration Strategies** (see [BROWSER_EXPLORATION.md](references/BROWSER_EXPLORATION.md)):
@@ -212,7 +229,7 @@ See [ANALYSIS_PATTERNS.md](references/ANALYSIS_PATTERNS.md) for detailed strateg
 
 ### One-shot Analysis
 User: "帮我分析 https://example.com 的网络请求"
-→ AI runs all 5 phases automatically
+→ AI runs all 5 phases automatically, including mandatory Playwright exploration
 
 ### Manual Capture Mode
 User: "开始抓包，我自己操作浏览器"
@@ -235,6 +252,13 @@ capture-session.sh diff captures/a.index.ndjson captures/b.index.ndjson
 capture-session.sh doctor
 ```
 Verify environment prerequisites before capture.
+
+### Install/Dependency Diagnostics
+```bash
+./install.sh --check
+./install.sh --doctor
+```
+Use this to diagnose runtime dependencies and current skill installation mode.
 
 ### Localhost Start Example
 ```bash

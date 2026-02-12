@@ -1,7 +1,7 @@
 {
   "capture-analytics": {
     "type": "domain",
-    "enforcement": "suggest",
+    "enforcement": "block",
     "priority": "high",
     "description": "AI-driven autonomous network traffic capture and deep analysis using mitmproxy and Playwright",
     "promptTriggers": {
@@ -40,7 +40,13 @@
         "debug websocket",
         "ws traffic",
         "tls分析",
-        "ssl分析"
+        "ssl分析",
+        "playwright",
+        "browser automation",
+        "browse website for requests",
+        "浏览器自动化",
+        "页面探索",
+        "自动浏览抓包"
       ],
       "intentPatterns": [
         "(抓包|捕获|拦截).*?(流量|请求|HTTP|网络|API)",

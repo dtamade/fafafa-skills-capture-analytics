@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
-# install.sh - Verify environment and install dependencies for capture-analytics
+# install.sh - Verify environment, install dependencies, and install capture-analytics skill
 #
 # Usage:
-#   ./install.sh           Full install (check + pip install)
-#   ./install.sh --check   Check-only mode (no changes)
+#   ./install.sh                         Full install (check + pip install + skill copy install)
+#   ./install.sh --check                 Check-only mode (no changes)
+#   ./install.sh --doctor                Run dependency diagnostics (doctor.sh)
+#   ./install.sh --install-to <path>     Install skill to custom target
+#   ./install.sh --symlink               Install skill as symlink (opt-in)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CHECK_ONLY=false
+RUN_DOCTOR=false
+INSTALL_SKILL=true
+LINK_MODE=false
+SKILL_TARGET_DIR="${HOME}/.claude/skills/capture-analytics"
+
 PYTHON_BIN="python3"
 PROJECT_VENV="$SCRIPT_DIR/.venv"
 PROJECT_VENV_PY="$PROJECT_VENV/bin/python3"
@@ -18,16 +26,67 @@ if [[ -x "$PROJECT_VENV_PY" ]]; then
     PYTHON_BIN="$PROJECT_VENV_PY"
 fi
 
-for arg in "$@"; do
-    case "$arg" in
-        --check|-c) CHECK_ONLY=true ;;
+usage() {
+    cat <<'USAGE'
+Usage: install.sh [options]
+
+Options:
+  --check, -c            Check-only mode (verify prerequisites without installing)
+  --doctor               Run dependency diagnostics via scripts/doctor.sh
+  --install-to, -t PATH  Skill target path (default: ~/.claude/skills/capture-analytics)
+  --no-skill-install     Skip skill installation (dependency setup only)
+  --symlink              Install skill as symlink (default is copy install)
+  -h, --help             Show this help
+
+Examples:
+  ./install.sh --check
+  ./install.sh --doctor
+  ./install.sh
+  ./install.sh --install-to ~/.claude/skills/capture-analytics
+  ./install.sh --symlink --install-to ~/.claude/skills/capture-analytics
+USAGE
+}
+
+require_value_arg() {
+    local opt="$1"
+    local value="${2:-}"
+    if [[ -z "$value" || "$value" == -* ]]; then
+        echo "[ERROR] Option $opt requires a value" >&2
+        exit 1
+    fi
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --check|-c)
+            CHECK_ONLY=true
+            shift
+            ;;
+        --doctor)
+            RUN_DOCTOR=true
+            shift
+            ;;
+        --install-to|-t)
+            require_value_arg "$1" "${2:-}"
+            SKILL_TARGET_DIR="${2:-}"
+            shift 2
+            ;;
+        --no-skill-install)
+            INSTALL_SKILL=false
+            shift
+            ;;
+        --symlink)
+            LINK_MODE=true
+            shift
+            ;;
         -h|--help)
-            echo "Usage: install.sh [--check]"
-            echo ""
-            echo "Options:"
-            echo "  --check, -c   Check-only mode (verify prerequisites without installing)"
-            echo "  -h, --help    Show this help"
+            usage
             exit 0
+            ;;
+        *)
+            echo "[ERROR] Unknown option: $1" >&2
+            usage
+            exit 1
             ;;
     esac
 done
@@ -49,6 +108,133 @@ fail() {
 warn() {
     WARN=$((WARN + 1))
     echo "  [WARN] $*"
+}
+
+realpath_safe() {
+    local path="$1"
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$path" 2>/dev/null || echo "$path"
+    else
+        echo "$path"
+    fi
+}
+
+describe_skill_install_state() {
+    local target="$1"
+
+    if [[ -L "$target" ]]; then
+        local link_target
+        link_target="$(readlink "$target" 2>/dev/null || echo "<unknown>")"
+        warn "skill installation: symlink at $target -> $link_target (external dependency mode)"
+        return
+    fi
+
+    if [[ -d "$target" ]]; then
+        if [[ -f "$target/SKILL.md" ]]; then
+            ok "skill installation: local directory at $target"
+        else
+            warn "skill installation: directory exists but SKILL.md missing at $target"
+        fi
+        return
+    fi
+
+    warn "skill installation: not installed at $target"
+}
+
+copy_skill_tree() {
+    local src="$1"
+    local dst="$2"
+    local tmp="${dst}.tmp.$$"
+
+    rm -rf "$tmp"
+    mkdir -p "$tmp"
+
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a \
+            --exclude '.git' \
+            --exclude '.venv' \
+            --exclude '.pytest_cache' \
+            --exclude '__pycache__' \
+            --exclude 'captures' \
+            "$src/" "$tmp/"
+    else
+        cp -a "$src/." "$tmp/"
+        rm -rf \
+            "$tmp/.git" \
+            "$tmp/.venv" \
+            "$tmp/.pytest_cache" \
+            "$tmp/captures"
+        find "$tmp" -type d -name '__pycache__' -prune -exec rm -rf {} + >/dev/null 2>&1 || true
+    fi
+
+    rm -rf "$dst"
+    mv "$tmp" "$dst"
+}
+
+install_skill_artifacts() {
+    local src="$1"
+    local dst="$2"
+
+    if [[ -z "$dst" || "$dst" == "/" ]]; then
+        fail "Invalid skill install target: $dst"
+        return
+    fi
+
+    mkdir -p "$(dirname "$dst")"
+
+    local src_real dst_real
+    src_real="$(realpath_safe "$src")"
+    dst_real="$(realpath_safe "$dst")"
+
+    if [[ "$LINK_MODE" == "true" ]]; then
+        if [[ "$src_real" == "$dst_real" ]]; then
+            ok "skill installation: source already at target ($dst)"
+            return
+        fi
+        rm -rf "$dst"
+        ln -s "$src" "$dst"
+        ok "skill installation: symlink created at $dst"
+        return
+    fi
+
+    if [[ -L "$dst" ]]; then
+        local current_link
+        current_link="$(readlink "$dst" 2>/dev/null || true)"
+        rm -f "$dst"
+        copy_skill_tree "$src" "$dst"
+        ok "skill installation: replaced symlink ($current_link) with local copy at $dst"
+    elif [[ "$src_real" == "$dst_real" ]]; then
+        ok "skill installation: source already at target ($dst)"
+    else
+        copy_skill_tree "$src" "$dst"
+        ok "skill installation: copied to $dst"
+    fi
+
+    chmod +x "$dst/scripts/"*.sh 2>/dev/null || true
+    chmod +x "$dst/scripts/"*.py 2>/dev/null || true
+
+    if [[ -f "$dst/SKILL.md" ]]; then
+        ok "skill installation: SKILL.md detected at target"
+    else
+        fail "skill installation: SKILL.md missing at target"
+    fi
+}
+
+run_doctor_diagnostics() {
+    if [[ ! -x "$SCRIPT_DIR/scripts/doctor.sh" ]]; then
+        fail "doctor diagnostics unavailable: scripts/doctor.sh not executable"
+        return
+    fi
+
+    echo ""
+    echo "=== Running Dependency Diagnostics ==="
+    echo ""
+
+    if "$SCRIPT_DIR/scripts/doctor.sh"; then
+        ok "doctor diagnostics: pass"
+    else
+        fail "doctor diagnostics: failed"
+    fi
 }
 
 # ── Check prerequisites ─────────────────────────────────────────────
@@ -113,6 +299,11 @@ if command -v shred >/dev/null 2>&1; then
     ok "shred: available (secure delete supported)"
 else
     warn "shred: not found (--secure cleanup will fall back to normal rm)"
+fi
+
+# Installation state diagnosis
+if [[ "$INSTALL_SKILL" == "true" ]]; then
+    describe_skill_install_state "$SKILL_TARGET_DIR"
 fi
 
 echo ""
@@ -182,16 +373,34 @@ else
         fi
     fi
 
+    if [[ "$INSTALL_SKILL" == "true" ]]; then
+        install_skill_artifacts "$SCRIPT_DIR" "$SKILL_TARGET_DIR"
+    fi
+
     echo ""
+fi
+
+if [[ "$RUN_DOCTOR" == "true" ]]; then
+    run_doctor_diagnostics
 fi
 
 # ── Summary ──────────────────────────────────────────────────────────
 
+echo ""
 echo "=== Summary ==="
 echo "  Passed:   $PASS"
 echo "  Warnings: $WARN"
 echo "  Failed:   $FAIL"
 echo "==============="
+
+if [[ "$INSTALL_SKILL" == "true" ]]; then
+    echo "  Skill target: $SKILL_TARGET_DIR"
+    if [[ "$LINK_MODE" == "true" ]]; then
+        echo "  Skill mode:   symlink"
+    else
+        echo "  Skill mode:   copy"
+    fi
+fi
 
 if [[ "$FAIL" -gt 0 ]]; then
     echo ""

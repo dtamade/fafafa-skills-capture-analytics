@@ -77,24 +77,34 @@ mitmdump --version
 python3 -c "from mitmproxy.io import FlowReader; print('OK')"
 ```
 
-### 安装为用户级技能
+### 安装为用户级技能（推荐）
 
 ```bash
-# 克隆到技能目录
+# 仓库可克隆到任意目录
 git clone https://github.com/dtamade/fafafa-skills-capture-analytics.git \
-  ~/.claude/skills/capture-analytics
+  ~/src/fafafa-skills-capture-analytics
+cd ~/src/fafafa-skills-capture-analytics
 
-# 或者从现有位置创建符号链接
-ln -s /path/to/capture-analytics ~/.claude/skills/capture-analytics
+# 依赖诊断
+./install.sh --check
+./install.sh --doctor
+
+# 以“本地副本”方式安装到 Claude（默认，不依赖外部软链接）
+./install.sh --install-to ~/.claude/skills/capture-analytics
+```
+
+可选（外部依赖模式）：
+
+```bash
+# 仅在你明确需要软链接时使用
+./install.sh --symlink --install-to ~/.claude/skills/capture-analytics
 ```
 
 ### 安装为项目级技能
 
 ```bash
-# 在你的项目目录中
-mkdir -p .claude/skills
-git clone https://github.com/dtamade/fafafa-skills-capture-analytics.git \
-  .claude/skills/capture-analytics
+# 安装到项目级 .claude/skills
+./install.sh --install-to /path/to/your-project/.claude/skills/capture-analytics
 ```
 
 ### 支持的平台

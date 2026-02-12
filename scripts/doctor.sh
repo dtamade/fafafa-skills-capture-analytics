@@ -28,7 +28,7 @@ Checks:
   [WARN] sha256          - sha256sum/shasum/openssl for integrity
   [WARN] shred           - Secure delete tool (optional)
   [WARN] ca-cert         - CA certificate status
-  [WARN] playwright-mcp  - Playwright MCP availability
+  [FAIL] playwright-mcp  - Playwright MCP/plugin not detected
 
 Exit codes:
   0 - All checks passed (or only warnings without --strict)
@@ -242,30 +242,42 @@ check_policy() {
     fi
 }
 
-# Check: Playwright MCP
+# Check: Playwright MCP / plugin availability
 check_playwright_mcp() {
-    # Try to detect Playwright MCP availability
-    # This is best-effort since we can't easily probe MCP servers
+    local has_cli="false"
+    local has_browser_cache="false"
+    local has_skill="false"
+    local has_plugin="false"
 
-    local status="unknown"
-    local detail=""
-
-    # Check if playwright is in PATH (npm global)
     if command -v playwright >/dev/null 2>&1; then
-        status="likely-available"
-        detail="Playwright CLI found"
-    elif [[ -d "$HOME/.cache/ms-playwright" ]] || [[ -d "$HOME/Library/Caches/ms-playwright" ]]; then
-        status="likely-available"
-        detail="Playwright browsers found"
-    else
-        status="unknown"
-        detail="Cannot detect Playwright MCP status"
+        has_cli="true"
     fi
 
-    if [[ "$status" == "likely-available" ]]; then
-        add_result "playwright-mcp" "pass" "Likely available" "$detail"
+    if [[ -d "$HOME/.cache/ms-playwright" ]] || [[ -d "$HOME/Library/Caches/ms-playwright" ]]; then
+        has_browser_cache="true"
+    fi
+
+    if [[ -f "$HOME/.claude/skills/playwright-skill/SKILL.md" ]]; then
+        has_skill="true"
+    fi
+
+    if [[ -f "$HOME/.claude/plugins/installed_plugins.json" ]]; then
+        if python3 -c "import json,sys;d=json.load(open(sys.argv[1]));p=d.get('plugins',{});sys.exit(0 if any('playwright@' in k for k in p.keys()) else 1)" "$HOME/.claude/plugins/installed_plugins.json" 2>/dev/null; then
+            has_plugin="true"
+        fi
+    fi
+
+    if [[ "$has_skill" == "true" && "$has_plugin" == "true" ]]; then
+        add_result "playwright-mcp" "pass" "Configured" "playwright skill + plugin detected"
+    elif [[ "$has_skill" == "true" || "$has_plugin" == "true" || "$has_cli" == "true" || "$has_browser_cache" == "true" ]]; then
+        local detail_parts=()
+        [[ "$has_skill" == "true" ]] && detail_parts+=("skill")
+        [[ "$has_plugin" == "true" ]] && detail_parts+=("plugin")
+        [[ "$has_cli" == "true" ]] && detail_parts+=("cli")
+        [[ "$has_browser_cache" == "true" ]] && detail_parts+=("browser-cache")
+        add_result "playwright-mcp" "warn" "Partially detected" "Detected: ${detail_parts[*]}. If AI skips browser actions, verify MCP tool permissions."
     else
-        add_result "playwright-mcp" "warn" "Status unknown" "Ensure Playwright MCP server is configured"
+        add_result "playwright-mcp" "fail" "Not detected" "Install/playwright plugin and ensure MCP tools are enabled"
     fi
 }
 

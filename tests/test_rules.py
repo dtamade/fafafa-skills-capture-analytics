@@ -204,3 +204,18 @@ def run_all_tests():
 
 if __name__ == '__main__':
     exit(run_all_tests())
+
+
+def test_playwright_enforcement_contract() -> None:
+    """Capture skill should strongly enforce Playwright-based workflow."""
+    rules = load_rules()
+    cfg = rules['capture-analytics']
+
+    assert cfg.get('enforcement') == 'block', (
+        'capture-analytics enforcement should be block to prevent skipping workflow'
+    )
+
+    keywords = cfg.get('promptTriggers', {}).get('keywords', [])
+    required = ['playwright', 'browser automation', '浏览器自动化']
+    for token in required:
+        assert token in keywords, f'missing Playwright trigger keyword: {token}'
